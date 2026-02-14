@@ -3,61 +3,73 @@ import {
   View,
   Text,
   TextInput,
-  Button,
-  Alert,
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { globalStyles, colors } from '../../utils/styles';
-import {
-  createUserWithEmailAndPassword,
-  usersRef,
-  serverTimestamp,
-  currentUser,
-} from '../../services/firebase';
+import auth from '@react-native-firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import Layout from '../Layout';
 import LinearGradient from 'react-native-linear-gradient';
+
+import Layout from '../Layout';
 import { showSuccess, showWarning } from '../../utils/ToastMessage';
+import { colors } from '../../utils/styles';
+import apiService from '../../api/apiService';
 
 const RegisterScreen = () => {
+  const navigation: any = useNavigation();
+
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigation: any = useNavigation();
 
   const handleRegister = async () => {
-    if (!name || !email || !password) {
-      Alert.alert('Error', 'Please fill all fields');
+    if (!name || !username || !password) {
+      showWarning('Please fill all required fields');
       return;
     }
+
     if (password.length < 6) {
-      // Alert.alert('Error', 'Password must be at least 6 characters');
       showWarning('Password must be at least 6 characters');
       return;
     }
+
     setLoading(true);
+
     try {
-      const { user } = await createUserWithEmailAndPassword(email, password);
-      // Save user profile to Firestore
-      await usersRef().doc(user.uid).set({
+      // 🔥 Call backend register API
+      const res = await apiService.signUp({
         name,
-        email: user.email,
-        uid: user.uid,
-        createdAt: serverTimestamp(),
-        lastSeen: serverTimestamp(),
-        isOnline: true,
+        username,
+        password,
+        email,
       });
-      // Alert.alert('Success', 'Account created! Logging in...');
-      showSuccess('Account created! Logging in...');
-      // Navigation handled by auth listener in App.js
+
+      if (!res.success) {
+        showWarning(res.message || 'Registration failed');
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Store JWT for backend APIs
+      await AsyncStorage.setItem('token', res.token);
+
+      // 🔥 Sign into Firebase using custom token
+      await auth().signInWithCustomToken(res.firebaseToken);
+
+      showSuccess('Account created successfully!');
+
+      // Navigate to Home
+      navigation.replace('Home');
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      showWarning(error?.message || 'Something went wrong');
     }
+
     setLoading(false);
   };
 
@@ -87,7 +99,16 @@ const RegisterScreen = () => {
           />
 
           <TextInput
-            placeholder="Email"
+            placeholder="Username"
+            placeholderTextColor="#aaa"
+            style={styles.input}
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
+
+          <TextInput
+            placeholder="Email (Optional)"
             placeholderTextColor="#aaa"
             style={styles.input}
             value={email}
