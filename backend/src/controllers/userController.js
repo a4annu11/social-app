@@ -92,7 +92,7 @@ export const updateUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Upload new profile image if provided
+    // Upload new profile image if provided.
     if (req.body.profilePicture) {
       // Delete old image if exists
       if (user.profilePicture) {
