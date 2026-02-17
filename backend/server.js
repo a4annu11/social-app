@@ -14,9 +14,9 @@ app.use(express.json());
 app.use(cors());
 
 app.use("/auth", authRoute);
-app.use("/user", userRoute);
+app.use("/user/profile", userRoute);
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   connectDB();
   console.log(`Server running on port ${PORT}`);
 });
