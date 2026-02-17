@@ -7,7 +7,8 @@ const ApiClient = async (route: any, options: any = {}) => {
   //   const { deviceId, notificationId }: any = state.auth;
 
   //   let token: any = state?.auth?.accessToken;
-  const BASE_URL = 'http://10.0.2.2:5000';
+  // const BASE_URL = 'http://10.0.2.2:5000';
+  const BASE_URL = 'https://socail-backend-cx8r.onrender.com'
   const token = '';
 
   const headers = {
