@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+
 const postSchema = new mongoose.Schema(
   {
     author: {
@@ -7,12 +8,18 @@ const postSchema = new mongoose.Schema(
       required: true,
     },
 
-    caption: String,
-
-    mediaUrl: String,
-    mediaType: {
+    caption: {
       type: String,
+      trim: true,
     },
+
+    media: [
+      {
+        url: { type: String, required: true },
+        public_id: { type: String, required: true },
+        type: { type: String, required: true },
+      },
+    ],
 
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
@@ -24,4 +31,4 @@ const postSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-module.exports = mongoose.model("Post", postSchema);
+export default mongoose.model("Post", postSchema);
