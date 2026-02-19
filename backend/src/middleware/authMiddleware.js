@@ -45,26 +45,17 @@ import User from "../models/users.js";
 
 export const protect = async (req, res, next) => {
   try {
-    console.log("---- PROTECT HIT ----");
-
     const authHeader = req.headers.authorization;
-    console.log("Authorization Header:", authHeader);
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "Not authorized" });
     }
 
     const token = authHeader.split(" ")[1];
-    console.log("Token:", token);
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Decoded ID:", decoded.id);
-
-    console.log("Mongo Host:", mongoose.connection.host);
-    console.log("Mongo DB:", mongoose.connection.name);
 
     const user = await User.findById(decoded.id);
-    console.log("User Found:", user);
 
     if (!user) {
       return res.status(401).json({ message: "User not found in DB" });
