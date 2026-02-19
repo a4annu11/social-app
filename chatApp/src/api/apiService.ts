@@ -31,6 +31,21 @@ class ApiService {
       return error;
     }
   };
+
+  getMyProfile = async () => {
+    try {
+      const res = await ApiClient('/auth/user/profile/', {
+        method: 'GET',
+      });
+      console.log(res, 'res from getMyProfile');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getMyProfile');
+      return error;
+    }
+  };
+
+
 }
 
 const apiService = new ApiService();

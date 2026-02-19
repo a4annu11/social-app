@@ -8,15 +8,14 @@ import { colors } from '../utils/styles';
 const Stack = createStackNavigator();
 
 const AuthNavigator = () => {
-    return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-      </Stack.Navigator>
-    );
-  
-
- 
+  return (
+    <Stack.Navigator
+      screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}
+    >
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+    </Stack.Navigator>
+  );
 };
 
 export default AuthNavigator;

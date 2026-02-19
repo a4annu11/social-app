@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {mobileW, mobileH} from '../../utils/Utils';
+import { mobileW, mobileH } from '../../utils/Utils';
 
 // import { CodeField, Cursor } from 'react-native-confirmation-code-field';
 
@@ -56,7 +56,7 @@ export const TextField = ({
       position: 'relative',
     },
     label: {
-     fontSize: 16,
+      fontSize: 16,
       color: colors.Text_Primary_Color,
       marginBottom: 6,
     },
@@ -68,12 +68,12 @@ export const TextField = ({
       borderRadius: 15,
       paddingHorizontal: mobileW * 0.04,
       paddingVertical: 2,
-      backgroundColor: backgroundColor ? backgroundColor : 'transparent',
+      backgroundColor: backgroundColor ? backgroundColor : colors.Input_Bg,
     },
     input: {
       flex: 1,
       fontSize: 16,
-      color: colors.Text_Primary_Color || '#000',
+      color: colors.Text_Primary_Color,
       height: height,
       paddingVertical: multiline ? 12 : 0,
       textAlignVertical: multiline ? 'top' : 'center',
@@ -82,10 +82,10 @@ export const TextField = ({
       marginRight: 8,
     },
     errorText: {
-      color: 'red',
+      color: '#c01010',
       marginLeft: 4,
       paddingBottom: 10,
- fontSize: 12,
+      fontSize: 12,
     },
     counterText: {
       position: 'absolute',
@@ -108,11 +108,8 @@ export const TextField = ({
         )}
 
         <TextInput
-        importantForAutofill='no'
-         style={[
-    Styles.input,
-    secureTextEntry && { color: '#000' },
-  ]}
+          importantForAutofill="no"
+          style={[Styles.input, secureTextEntry && { color: '#fff' }]}
           placeholder={placeholder}
           multiline={multiline}
           numberOfLines={numberOfLines}

@@ -18,7 +18,8 @@ const Layout = ({
 
   return (
     <LinearGradient
-      colors={['#326372a9', '#4c9bcce1', '#e4e3e8' ]}
+      colors={['#0F1223', '#2a466e', '#000000' ]}
+      
       style={{ flex: 1 }}
     >
       <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']}>
