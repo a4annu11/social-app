@@ -4,30 +4,33 @@ import { Platform } from 'react-native';
 import { store } from '../redux/store';
 
 const ApiClient = async (route: any, options: any = {}) => {
-    const state: any = store.getState();
+  const state: any = store.getState();
   //   const { deviceId, notificationId }: any = state.auth;
 
-    let token: any = state?.auth?.accessToken;
+  let token: any = state?.auth?.accessToken;
   // const BASE_URL = 'http://10.0.2.2:5000';
-  const BASE_URL = 'https://socail-backend-cx8r.onrender.com'
+  const BASE_URL = 'https://socail-backend-cx8r.onrender.com';
 
-  
-  
   const headers = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options?.headers,
   };
   try {
-    console.log("TOKEN:: ", token);
+    console.log('TOKEN:: ', token);
     console.log(BASE_URL + route, 'BASE_URL + route');
     const response = await fetch(BASE_URL + route, {
       ...options,
       headers,
     });
-    const data = await response.json();
+    const text = await response.text();
 
-    return data;
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      console.log('Non JSON response:', text);
+      throw new Error('Server did not return JSON');
+    }
   } catch (error) {
     console.log(error, 'error from contentApiClient');
     return error;
