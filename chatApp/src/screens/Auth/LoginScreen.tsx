@@ -68,6 +68,7 @@ const LoginScreen = () => {
       }
 
       dispatch(setAccessToken(res?.token));
+      await AsyncStorage.setItem('token', res.token);
 
       const userProfile = await apiService.getMyProfile();
       if (!userProfile.success) {
@@ -75,7 +76,6 @@ const LoginScreen = () => {
         setLoading(false);
         return;
       }
-      await AsyncStorage.setItem('token', res.token);
       await auth().signInWithCustomToken(res.firebaseToken);
       dispatch(setAuthenticated(true));
 

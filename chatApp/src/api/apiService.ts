@@ -34,7 +34,7 @@ class ApiService {
 
   getMyProfile = async () => {
     try {
-      const res = await ApiClient('/auth/user/profile', {
+      const res = await ApiClient('/user/profile', {
         method: 'GET',
       });
       console.log(res, 'res from getMyProfile');
