@@ -61,22 +61,22 @@ const LoginScreen = () => {
         password: data.password,
       });
 
-      if (!res.success) {
-        showWarning(res.message);
+      if (!res?.success) {
+        showWarning(res?.message);
         setLoading(false);
         return;
       }
 
       dispatch(setAccessToken(res?.token));
-      await AsyncStorage.setItem('token', res.token);
+      await AsyncStorage.setItem('token', res?.token);
 
+      await auth().signInWithCustomToken(res?.firebaseToken);
       const userProfile = await apiService.getMyProfile();
       if (!userProfile.success) {
         showWarning('Failed to get profile');
         setLoading(false);
         return;
       }
-      await auth().signInWithCustomToken(res.firebaseToken);
       dispatch(setAuthenticated(true));
 
       await AsyncStorage.setItem('currentUser', JSON.stringify(userProfile));

@@ -26,6 +26,8 @@ import {
   OpenEyeIcon,
   UserIcon,
 } from '../../utils/Icons';
+import { setAccessToken, setAuthenticated } from '../../redux/slice/authSlice';
+import { useAppDispatch } from '../../redux/hooks';
 
 const RegisterScreen = () => {
   const navigation: any = useNavigation();
@@ -33,6 +35,7 @@ const RegisterScreen = () => {
   const [loading, setLoading] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
   const inputRefs = useRef<any>({});
+  const dispatch = useAppDispatch();
 
   const methods = useForm({
     defaultValues: {
@@ -66,15 +69,24 @@ const RegisterScreen = () => {
         password: data.password,
       });
 
-      if (!res.success) {
-        showWarning(res.message || 'Registration failed');
+      if (!res?.success) {
+        showWarning(res?.message || 'Registration failed');
         setLoading(false);
         return;
       }
 
-      await AsyncStorage.setItem('token', res.token);
+      dispatch(setAccessToken(res?.token));
+      await AsyncStorage.setItem('token', res?.token);
+      await auth().signInWithCustomToken(res?.firebaseToken);
+      const userProfile = await apiService.getMyProfile();
+      if (!userProfile.success) {
+        showWarning('Failed to get profile');
+        setLoading(false);
+        return;
+      }
+      dispatch(setAuthenticated(true));
 
-      await auth().signInWithCustomToken(res.firebaseToken);
+      await AsyncStorage.setItem('currentUser', JSON.stringify(userProfile));
 
       showSuccess('Account created successfully!');
       // navigation.replace('Home');
