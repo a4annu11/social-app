@@ -2,7 +2,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AppNameLogo } from '../utils/Icons';
-import { useTheme } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import { typography } from '../theme';
 
 const AppHeader = ({
@@ -14,6 +14,7 @@ const AppHeader = ({
   onPressRightIcon2,
 }: any) => {
   const { colors }: any = useTheme();
+  const navigation = useNavigation();
   return (
     <View
       style={{
@@ -28,12 +29,14 @@ const AppHeader = ({
         {isLogo ? (
           <AppNameLogo />
         ) : (
-          <Icon name="arrow-back" size={24} color="#fff" />
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icon name="arrow-back" size={24} color={colors.Colored_Text} />
+          </TouchableOpacity>
         )}
         <Text
           style={{
             ...typography.Montserrat_Bold18,
-            color: colors.Text_Primary_Color,
+            color: colors.Colored_Text,
           }}
         >
           {title}

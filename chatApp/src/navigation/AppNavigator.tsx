@@ -4,6 +4,7 @@ import ChatScreen from '../screens/ChatScreen';
 import TabNavigator from './TabNavigator';
 import CreateGroupScreen from '../screens/TabScreens/CreateGroupScreen';
 import { colors } from '../utils/styles';
+import ProfileScreen from '../screens/AppScreen/AppProfileScreen';
 
 const Stack = createStackNavigator();
 
@@ -18,7 +19,7 @@ const AppNavigator = () => {
       <Stack.Screen
         name="Chat"
         component={ChatScreen}
-        options={({ route }) => ({
+        options={({ route }: any) => ({
           headerShown: false,
           title: route.params?.otherUser?.name || 'Chat',
           headerStyle: { backgroundColor: '#007AFF' },
@@ -29,6 +30,11 @@ const AppNavigator = () => {
         name="CreateGroup"
         component={CreateGroupScreen}
         options={{ headerShown: false, title: 'Create Group' }}
+      />
+      <Stack.Screen
+        name="userProfile"
+        component={ProfileScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

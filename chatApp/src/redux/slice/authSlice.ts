@@ -24,8 +24,8 @@ const authSlice: any = createSlice({
     },
     setCurrentUser: (state: any, action: any) => {
       state.currentUser = action.payload;
-      state.showNotification = action.payload.notificationStatus === 'Yes';
-      state.notificationHistory = action.payload.notificationHistory === 'Yes';
+      // state.showNotification = action.payload.notificationStatus === 'Yes';
+      // state.notificationHistory = action.payload.notificationHistory === 'Yes';
     },
     setInitializing: (state: any, action: any) => {
       state.initializing = action.payload;

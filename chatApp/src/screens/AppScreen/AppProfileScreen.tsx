@@ -19,7 +19,8 @@ import { typography } from '../../theme';
 
 const tabs = ['Posts', 'Saved', 'Tagged'];
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation, route }: any) => {
+  const username = route.params?.username;
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('Posts');
   const { colors }: any = useTheme();
@@ -29,7 +30,9 @@ const ProfileScreen = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await apiService.getMyProfile();
+      const res = await apiService.getOtherUserProfile({
+        username: username,
+      });
 
       if (res?.success) {
         setProfileData(res?.user);
@@ -150,7 +153,7 @@ const ProfileScreen = () => {
         }}
       >
         <View style={{ flex: 1 }}>
-          <GradientButton title="Edit Profile" onPress={() => {}} />
+          <GradientButton title="Follow" onPress={() => {}} />
         </View>
 
         <View

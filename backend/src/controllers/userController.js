@@ -68,10 +68,13 @@ export const getUserProfile = async (req, res) => {
     }
 
     res.status(200).json({
-      ...user.toObject(),
-      isFollowing,
-      isFollower,
-      isRequested,
+      success: true,
+      user: {
+        ...user.toObject(),
+        isFollowing,
+        isFollower,
+        isRequested,
+      },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

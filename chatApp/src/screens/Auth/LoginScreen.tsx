@@ -28,7 +28,11 @@ import {
 import { GradientButton } from '../../components/UI/Button';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppDispatch } from '../../redux/hooks';
-import { setAccessToken, setAuthenticated } from '../../redux/slice/authSlice';
+import {
+  setAccessToken,
+  setAuthenticated,
+  setCurrentUser,
+} from '../../redux/slice/authSlice';
 
 const LoginScreen = () => {
   const navigation: any = useNavigation();
@@ -67,25 +71,36 @@ const LoginScreen = () => {
         return;
       }
 
+      // Save backend token
       dispatch(setAccessToken(res?.token));
       await AsyncStorage.setItem('token', res?.token);
 
+      // Sign in to Firebase
       await auth().signInWithCustomToken(res?.firebaseToken);
-      const userProfile = await apiService.getMyProfile();
-      if (!userProfile.success) {
+
+      // Fetch user profile
+      const userProfileRes = await apiService.getMyProfile();
+      if (!userProfileRes?.success) {
         showWarning('Failed to get profile');
         setLoading(false);
         return;
       }
+
+      const userProfile = userProfileRes.user;
+
+      // Save profile in AsyncStorage
+      await AsyncStorage.setItem('currentUser', JSON.stringify(userProfile));
+
+      //  Update Redux state
+      dispatch(setCurrentUser(userProfile));
       dispatch(setAuthenticated(true));
 
-      await AsyncStorage.setItem('currentUser', JSON.stringify(userProfile));
-      // navigation.replace('Home');
+      // navigation.replace('Home'); // optional
     } catch (error: any) {
       showWarning(error.message);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (

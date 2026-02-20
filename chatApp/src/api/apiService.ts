@@ -46,6 +46,33 @@ class ApiService {
   };
 
 
+  //HOME
+  getFeed = async () => {
+    try {
+      const res = await ApiClient('/content/feed', {
+        method: 'GET',
+      });
+      console.log(res, 'res from getFeed');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getFeed');
+      return error;
+    }
+  }
+
+    getOtherUserProfile = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/user/profile/${payload?.username}`, {
+        method: 'GET',
+      });
+      console.log(res, 'res from getOtherUserProfile');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getOtherUserProfile');
+      return error;
+    }
+  };
+
 }
 
 const apiService = new ApiService();
