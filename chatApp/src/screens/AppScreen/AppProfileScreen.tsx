@@ -16,6 +16,8 @@ import { useTheme } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import { showError } from '../../utils/ToastMessage';
 import { typography } from '../../theme';
+import { getChatId, initializeChatDoc } from '../../services/firebase';
+import auth from '@react-native-firebase/auth';
 
 const tabs = ['Posts', 'Saved', 'Tagged'];
 
@@ -49,6 +51,37 @@ const ProfileScreen = ({ navigation, route }: any) => {
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  const handleStartChat = async () => {
+    try {
+      const currentUid = auth().currentUser?.uid;
+      if (!currentUid) {
+        showError('You must be logged in to start a chat');
+        return;
+      }
+
+      const otherUid = profileData._id.toString(); // Assuming profileData._id is the Mongo ID
+      const chatId = getChatId(currentUid, otherUid);
+      const participants = [currentUid, otherUid];
+
+      // Initialize chat doc if not exists
+      await initializeChatDoc(chatId, participants);
+
+      // Navigate to chat screen (adjust route name and params as needed)
+      navigation.navigate('Chat', {
+        chatId,
+        otherUser: {
+          uid: otherUid,
+          name: profileData.name,
+          username: profileData.username,
+          // Add other details if needed
+        },
+      });
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      showError('Failed to start chat');
+    }
+  };
 
   return (
     <Layout paddingTop={insets.top}>
@@ -156,7 +189,8 @@ const ProfileScreen = ({ navigation, route }: any) => {
           <GradientButton title="Follow" onPress={() => {}} />
         </View>
 
-        <View
+        <TouchableOpacity
+          onPress={handleStartChat}
           style={{
             backgroundColor: colors.Linear_Gradient_1,
             width: 48,
@@ -166,8 +200,8 @@ const ProfileScreen = ({ navigation, route }: any) => {
             alignItems: 'center',
           }}
         >
-          <Icon name="share-social-outline" size={24} color="#fff" />
-        </View>
+          <Icon name="chatbubble-ellipses-outline" size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       {/* Tabs Row */}

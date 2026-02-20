@@ -43,7 +43,6 @@ function CustomTabBar({ state, navigation }: any) {
           { borderWidth: 1, borderColor: colors.Border_Color },
         ]}
       >
-        {/* LEFT */}
         <TabIcon
           icon="home"
           route="Home"
@@ -51,6 +50,7 @@ function CustomTabBar({ state, navigation }: any) {
           navigation={navigation}
           index={0}
         />
+
         <TabIcon
           icon="search"
           route="Users"
@@ -59,16 +59,14 @@ function CustomTabBar({ state, navigation }: any) {
           index={1}
         />
 
-        {/* CENTER BUTTON */}
-        {/* <TouchableOpacity
-          style={styles.centerBtn}
-          onPress={() => navigation.navigate('Messages')}
-          activeOpacity={0.8}
-        >
-          <Icon name="add" size={30} color="#fff" />
-        </TouchableOpacity> */}
+        <TabIcon
+          icon="chatbubble"
+          route="Messages"
+          state={state}
+          navigation={navigation}
+          index={2}
+        />
 
-        {/* RIGHT */}
         <TabIcon
           icon="compass"
           route="Groups"
@@ -76,6 +74,7 @@ function CustomTabBar({ state, navigation }: any) {
           navigation={navigation}
           index={3}
         />
+
         <TabIcon
           icon="person"
           route="Profile"
@@ -109,7 +108,6 @@ const TabIcon = ({ icon, route, state, navigation, index }: any) => {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    // bottom: 18,
     left: 16,
     right: 16,
   },
@@ -130,22 +128,6 @@ const styles = StyleSheet.create({
   iconBtn: {
     flex: 1,
     alignItems: 'center',
-  },
-  centerBtn: {
-    position: 'absolute',
-    top: -28,
-    alignSelf: 'center',
-    width: 65,
-    height: 65,
-    borderRadius: 40,
-    backgroundColor: '#6c7cff',
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    shadowColor: '#6c7cff',
-    shadowOpacity: 0.6,
-    shadowRadius: 15,
-    elevation: 12,
   },
 });
 
