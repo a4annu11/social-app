@@ -81,7 +81,7 @@ const getDateLabel = (timestamp: any) => {
 
 // Helper function to check if two messages are on different days
 const isDifferentDay = (timestamp1: any, timestamp2: any) => {
-  if (!timestamp1 || !timestamp2) return true;
+  if (!timestamp1 || !timestamp2) return false;
 
   const date1 = timestamp1.toDate();
   const date2 = timestamp2.toDate();
@@ -560,8 +560,12 @@ const ChatScreen = () => {
             keyExtractor={(item: any) => item.id}
             renderItem={({ item, index }: any) => {
               const showDateSeparator =
-                index === 0 ||
-                isDifferentDay(messages[index - 1].timestamp, item.timestamp);
+                !!item.timestamp &&
+                (index === 0 ||
+                  isDifferentDay(
+                    messages[index - 1].timestamp,
+                    item.timestamp,
+                  ));
 
               if (item.deletedGlobally) {
                 return (
@@ -572,7 +576,10 @@ const ChatScreen = () => {
                         <Text
                           style={[
                             styles.dateSeparatorText,
-                            { backgroundColor: colors.Colored_Text },
+                            {
+                              backgroundColor: colors.Colored_Text,
+                              color: colors.Text_Primary_Color,
+                            },
                           ]}
                         >
                           {getDateLabel(item.timestamp)}
@@ -618,7 +625,10 @@ const ChatScreen = () => {
                       <Text
                         style={[
                           styles.dateSeparatorText,
-                          { backgroundColor: colors.Colored_Text },
+                          {
+                            backgroundColor: colors.Colored_Text,
+                            color: colors.Text_Primary_Color,
+                          },
                         ]}
                       >
                         {getDateLabel(item.timestamp)}
@@ -1045,7 +1055,7 @@ const styles = StyleSheet.create({
   dateSeparatorLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ddd',
+    backgroundColor: '#3f3a8b48',
   },
   reactionButtonSelected: {
     backgroundColor: '#eee',
