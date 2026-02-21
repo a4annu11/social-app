@@ -8,8 +8,9 @@ import {
   StyleSheet,
   TextInput,
   DeviceEventEmitter,
+  Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import {
   fetchUserChats,
   getLastMessage,
@@ -20,13 +21,13 @@ import {
   chatsRef,
   chatDocRef,
 } from '../../services/firebase';
-import { globalStyles, colors } from '../../utils/styles';
 import { formatLastSeen } from '../../utils/time';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import firestore from '@react-native-firebase/firestore';
 import Layout from '../Layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { typography } from '../../theme';
 
 const MessagesScreen = () => {
   const [conversations, setConversations] = useState<any[]>([]);
@@ -36,6 +37,7 @@ const MessagesScreen = () => {
   const navigation: any = useNavigation();
   const currentUid = currentUser()?.uid;
   const insets = useSafeAreaInsets();
+  const { colors }: any = useTheme();
 
   // Use ref to track processed chat IDs to avoid duplicates
   const processedChatIds = useRef<Set<string>>(new Set());
@@ -102,62 +104,129 @@ const MessagesScreen = () => {
     }
   };
 
+  // const enrichConversation = async (conv: any) => {
+  //   let lastMsg = null;
+  //   let unread = 0;
+  //   let title = conv.name || 'Unknown';
+
+  //   try {
+  //     // Use the new function to get last visible message
+  //     lastMsg = await getLastVisibleMessage(conv.id);
+  //     unread = await getUnreadCountFast(conv.id, currentUid);
+
+  //     console.log('LastMSG', lastMsg);
+
+  //     if (!conv.participants || conv.participants.length !== 2) {
+  //       console.error('Invalid participants in conversation:', conv.id);
+  //       return null; // Skip invalid conversations
+  //     }
+
+  //     const otherUid = conv.participants.find((p: string) => p !== currentUid);
+  //     if (!otherUid) {
+  //       console.error('No other UID found in conversation:', conv.id);
+  //       return null;
+  //     }
+
+  //     const otherDoc = await usersRef().doc(otherUid).get();
+  //     const otherUser = otherDoc.exists ? otherDoc.data() : null;
+  //     title = otherUser?.name || 'Unknown User';
+  //   } catch (error) {
+  //     console.error('Error enriching conversation:', error);
+  //     return null;
+  //   }
+
+  //   let preview = 'No messages yet';
+  //   if (lastMsg) {
+  //     if (lastMsg.deletedGlobally) {
+  //       preview = 'This message was deleted';
+  //     } else {
+  //       preview = lastMsg.text
+  //         ? `${lastMsg.text.substring(0, 30)}${
+  //             lastMsg.text.length > 30 ? '...' : ''
+  //           }`
+  //         : 'No messages yet';
+  //     }
+  //   } else {
+  //     // No visible messages - either chat is cleared or all messages deleted
+  //     preview = 'No messages';
+  //   }
+
+  //   return {
+  //     ...conv,
+  //     title,
+  //     preview,
+  //     timestamp: lastMsg?.timestamp || null,
+  //     unreadCount: unread,
+  //   };
+  // };
+
   const enrichConversation = async (conv: any) => {
-    let lastMsg = null;
+    if (!currentUid) return null;
+
+    let lastMsg: any = null;
     let unread = 0;
-    let title = conv.name || 'Unknown';
+    let title = 'Unknown User';
+    let profilePicture: string | null = null;
 
     try {
-      // Use the new function to get last visible message
+      // 1️⃣ Get last visible message
       lastMsg = await getLastVisibleMessage(conv.id);
+
+      // 2️⃣ Get unread count
       unread = await getUnreadCountFast(conv.id, currentUid);
 
-      console.log('LastMSG', lastMsg);
-
+      // 3️⃣ Validate participants
       if (!conv.participants || conv.participants.length !== 2) {
         console.error('Invalid participants in conversation:', conv.id);
-        return null; // Skip invalid conversations
+        return null;
       }
 
+      // 4️⃣ Get other user's UID
       const otherUid = conv.participants.find((p: string) => p !== currentUid);
+
       if (!otherUid) {
         console.error('No other UID found in conversation:', conv.id);
         return null;
       }
 
+      // 5️⃣ Fetch other user's Firestore document
       const otherDoc = await usersRef().doc(otherUid).get();
-      const otherUser = otherDoc.exists ? otherDoc.data() : null;
-      title = otherUser?.name || 'Unknown User';
+
+      if (otherDoc.exists) {
+        const otherUser = otherDoc.data();
+
+        title = otherUser?.name || 'Unknown User';
+        profilePicture = otherUser?.profilePicture || null;
+      }
     } catch (error) {
       console.error('Error enriching conversation:', error);
       return null;
     }
 
-    let preview = 'No messages yet';
+    // 6️⃣ Build preview
+    let preview = 'No messages';
+
     if (lastMsg) {
       if (lastMsg.deletedGlobally) {
         preview = 'This message was deleted';
-      } else {
-        preview = lastMsg.text
-          ? `${lastMsg.text.substring(0, 30)}${
-              lastMsg.text.length > 30 ? '...' : ''
-            }`
-          : 'No messages yet';
+      } else if (lastMsg.text) {
+        preview =
+          lastMsg.text.length > 30
+            ? `${lastMsg.text.substring(0, 30)}...`
+            : lastMsg.text;
       }
-    } else {
-      // No visible messages - either chat is cleared or all messages deleted
-      preview = 'No messages';
     }
 
+    // 7️⃣ Return enriched conversation
     return {
       ...conv,
       title,
+      profilePicture, // ✅ THIS FIXES YOUR ISSUE
       preview,
       timestamp: lastMsg?.timestamp || null,
       unreadCount: unread,
     };
   };
-
   const loadConversations = async () => {
     if (!currentUid) return;
 
@@ -480,102 +549,162 @@ const MessagesScreen = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={[globalStyles.center]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
   console.log('FILTERED', filtered);
   return (
     <Layout paddingTop={insets.top}>
-      <View style={[{ flex: 1 }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Messages</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Users')}>
-            <Icon name="account-plus" size={26} color={colors.primary} />
-          </TouchableOpacity>
+      {loading ? (
+        <View
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <ActivityIndicator size="large" color={'#fff'} />
         </View>
+      ) : (
+        <View style={[{ flex: 1 }]}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text
+              style={{
+                ...typography.Montserrat_Bold18,
+                color: colors.Text_Primary_Color,
+              }}
+            >
+              Messages
+            </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Users')}>
+              <Icon
+                name="account-plus"
+                size={26}
+                color={colors.Text_Primary_Color}
+              />
+            </TouchableOpacity>
+          </View>
 
-        {/* Search */}
-        <View style={styles.searchBox}>
-          <Icon name="magnify" size={20} color={colors.textSecondary} />
-          <TextInput
-            placeholder="Search conversations..."
-            placeholderTextColor={colors.textSecondary}
-            value={search}
-            onChangeText={setSearch}
-            style={styles.searchInput}
+          {/* Search */}
+          <View
+            style={[styles.searchBox, { backgroundColor: colors.Card_Color }]}
+          >
+            <Icon
+              name="magnify"
+              size={26}
+              color={colors.Text_Secondary_Color}
+            />
+            <TextInput
+              placeholder="Search conversations..."
+              placeholderTextColor={colors.Text_Secondary_Color}
+              value={search}
+              onChangeText={setSearch}
+              style={{
+                ...typography.Montserrat_Regular14,
+                color: colors.Text_Primary_Color,
+                flex: 1,
+                marginLeft: 6,
+              }}
+            />
+          </View>
+
+          {filtered.length > 0 && (
+            <Text
+              style={{
+                ...typography.Montserrat_Bold16,
+                color: colors.Text_Secondary_Color,
+                marginVertical: 10,
+                marginHorizontal: 16,
+              }}
+            >
+              Recent Chats
+            </Text>
+          )}
+
+          {/* Conversations */}
+          <FlatList
+            data={filtered}
+            keyExtractor={(item: any, index: number) => `${item.id}-${index}`}
+            renderItem={({ item }: any) => (
+              <TouchableOpacity
+                onPress={() => openConversation(item)}
+                style={styles.chatCard}
+                activeOpacity={0.8}
+              >
+                <View style={styles.iconWrap}>
+                  <Image
+                    source={
+                      item.profilePicture
+                        ? { uri: item.profilePicture }
+                        : require('../../../assets/images/default-user.png')
+                    }
+                    style={{ height: '100%', width: '100%' }}
+                    resizeMode="cover"
+                  />
+                </View>
+                <View
+                  style={{
+                    flex: 1,
+                    borderBottomWidth: 1,
+                    borderColor: '#cccccc1e',
+                    paddingBottom: 10,
+                  }}
+                >
+                  <View style={styles.chatTop}>
+                    <Text
+                      style={{
+                        ...typography.Montserrat_Bold16,
+                        color: colors.Text_Primary_Color,
+                      }}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text
+                      style={{
+                        ...typography.Montserrat_Regular12,
+                        color: colors.Text_Secondary_Color,
+                      }}
+                    >
+                      {item.timestamp ? formatLastSeen(item.timestamp) : ''}
+                    </Text>
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.chatPreview,
+                      {
+                        color: typingStatus[item.id]
+                          ? colors.Colored_Text
+                          : item.unreadCount > 0
+                          ? colors.Colored_Text
+                          : colors.Text_Secondary_Color,
+                        fontWeight: item.unreadCount > 0 ? 'bold' : 'normal',
+                        fontStyle:
+                          typingStatus[item.id] || item.unreadCount > 0
+                            ? 'italic'
+                            : 'normal',
+                      },
+                    ]}
+                  >
+                    {typingStatus[item.id] ? '✍️ typing...' : item.preview}
+                  </Text>
+                </View>
+                {item.unreadCount > 0 && (
+                  <View
+                    style={[
+                      styles.badge,
+                      { backgroundColor: colors.Colored_Text },
+                    ]}
+                  >
+                    <Text style={styles.badgeText}>
+                      {item.unreadCount > 99 ? '99+' : item.unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>
+                💬 No conversations yet. Start chatting!
+              </Text>
+            }
           />
         </View>
-
-        {/* Conversations */}
-        <FlatList
-          data={filtered}
-          keyExtractor={(item: any, index: number) => `${item.id}-${index}`}
-          renderItem={({ item }: any) => (
-            <TouchableOpacity
-              onPress={() => openConversation(item)}
-              style={styles.chatCard}
-              activeOpacity={0.8}
-            >
-              <View style={styles.iconWrap}>
-                <Icon name="account" size={26} color="#fff" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={styles.chatTop}>
-                  <Text style={styles.chatName}>{item.title}</Text>
-                  <Text style={styles.chatTime}>
-                    {item.timestamp ? formatLastSeen(item.timestamp) : ''}
-                  </Text>
-                </View>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.chatPreview,
-                    {
-                      color: typingStatus[item.id]
-                        ? colors.primary
-                        : item.unreadCount > 0
-                        ? 'black'
-                        : colors.textSecondary,
-                      fontWeight: item.unreadCount > 0 ? 'bold' : 'normal',
-                      fontStyle:
-                        typingStatus[item.id] || item.unreadCount > 0
-                          ? 'italic'
-                          : 'normal',
-                    },
-                  ]}
-                >
-                  {typingStatus[item.id] ? '✍️ typing...' : item.preview}
-                </Text>
-              </View>
-              {item.unreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {item.unreadCount > 99 ? '99+' : item.unreadCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>
-              💬 No conversations yet. Start chatting!
-            </Text>
-          }
-        />
-
-        {/* Floating Action Button */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => navigation.navigate('Users')}
-        >
-          <Icon name="message-plus" size={26} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      )}
     </Layout>
   );
 };
@@ -589,60 +718,54 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.text,
-  },
+
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    // backgroundColor: '#fff',
     marginHorizontal: 16,
     marginBottom: 10,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    height: 40,
+    borderRadius: 50,
+    paddingHorizontal: 14,
+    height: 50,
   },
-  searchInput: { flex: 1, marginLeft: 8, color: colors.text },
+  searchInput: { flex: 1, marginLeft: 6 },
   chatCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginVertical: 6,
-    padding: 12,
+    // padding: 12,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
     position: 'relative',
+    // borderBottomWidth: 1,
+    // borderColor: '#fff',
   },
   iconWrap: {
-    backgroundColor: colors.primary,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
+    overflow: 'hidden',
+    // borderWidth: 2,
   },
   chatTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  chatName: { fontSize: 16, fontWeight: '600', color: colors.text },
-  chatTime: { fontSize: 12, color: colors.textSecondary },
-  chatPreview: { fontSize: 13, color: colors.textSecondary, marginTop: 3 },
+  chatName: { fontSize: 16, fontWeight: '600' },
+  chatTime: { fontSize: 12 },
+  chatPreview: { fontSize: 13, marginTop: 3 },
   badge: {
-    backgroundColor: colors.primary,
+    // backgroundColor: colors.primary,
     borderRadius: 12,
     minWidth: 22,
     height: 22,
     position: 'absolute',
     right: 20,
-    bottom: 14,
+    bottom: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -651,13 +774,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 60,
     fontSize: 16,
-    color: colors.textSecondary,
+    // color: colors.textSecondary,
   },
   fab: {
     position: 'absolute',
     bottom: 25,
     right: 25,
-    backgroundColor: colors.primary,
+    // backgroundColor: colors.primary,
     width: 56,
     height: 56,
     borderRadius: 28,

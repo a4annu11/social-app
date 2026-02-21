@@ -32,7 +32,7 @@ export const createPost = async (req, res) => {
       media: uploadedMedia,
     });
 
-    res.status(201).json(post);
+    res.status(201).json({ success: true, post });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -85,7 +85,7 @@ export const updatePost = async (req, res) => {
 
     await post.save();
 
-    res.json(post);
+    res.json({ success: true, post });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -112,7 +112,7 @@ export const deletePost = async (req, res) => {
     await Comment.deleteMany({ post: postId });
     await post.deleteOne();
 
-    res.json({ message: "Post deleted successfully" });
+    res.json({ success: true, message: "Post deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -133,6 +133,7 @@ export const getSinglePost = async (req, res) => {
     const isLiked = post.likes.some((id) => id.toString() === userId);
 
     res.json({
+      success: true,
       ...post._doc,
       likesCount: post.likes.length,
       isLiked,
@@ -162,6 +163,7 @@ export const toggleLikePost = async (req, res) => {
     await post.save();
 
     res.json({
+      success: true,
       isLiked: !isLiked,
       likesCount: post.likes.length,
     });
@@ -193,7 +195,7 @@ export const addComment = async (req, res) => {
       $inc: { commentsCount: 1 },
     });
 
-    res.status(201).json(comment);
+    res.status(201).json({ success: true, comment });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -223,7 +225,7 @@ export const deleteComment = async (req, res) => {
       $inc: { commentsCount: -totalToDelete },
     });
 
-    res.json({ message: "Comment deleted" });
+    res.json({ success: true, message: "Comment deleted" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -248,6 +250,7 @@ export const toggleLikeComment = async (req, res) => {
     await comment.save();
 
     res.json({
+      success: true,
       isLiked: !isLiked,
       likesCount: comment.likes.length,
     });
@@ -287,7 +290,10 @@ export const getPostComments = async (req, res) => {
       }
     });
 
-    res.json(rootComments);
+    res.json({
+      success: true,
+      comments: rootComments,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -339,6 +345,66 @@ export const getFeed = async (req, res) => {
     ]);
 
     res.json({
+      page,
+      limit,
+      posts,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getUserPosts = async (req, res) => {
+  try {
+    const currentUserId = new mongoose.Types.ObjectId(req.user.id);
+    const { userId } = req.params;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const posts = await Post.aggregate([
+      {
+        $match: {
+          author: new mongoose.Types.ObjectId(userId),
+        },
+      },
+
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "author",
+          foreignField: "_id",
+          as: "author",
+        },
+      },
+      { $unwind: "$author" },
+
+      {
+        $addFields: {
+          likesCount: { $size: "$likes" },
+          isLiked: { $in: [currentUserId, "$likes"] },
+        },
+      },
+
+      {
+        $project: {
+          likes: 0,
+          __v: 0,
+          "author.password": 0,
+          "author.email": 0,
+          "author.blockedUsers": 0,
+          "author.__v": 0,
+        },
+      },
+    ]);
+
+    res.json({
+      success: true,
       page,
       limit,
       posts,

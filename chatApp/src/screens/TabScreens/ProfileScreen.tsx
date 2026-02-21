@@ -16,6 +16,9 @@ import { useTheme } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import { showError } from '../../utils/ToastMessage';
 import { typography } from '../../theme';
+import { useAppDispatch } from '../../redux/hooks';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logoutUser } from '../../redux/slice/authSlice';
 
 const tabs = ['Posts', 'Saved', 'Tagged'];
 
@@ -25,6 +28,7 @@ const ProfileScreen = () => {
   const { colors }: any = useTheme();
   const [profileData, setProfileData] = useState<any>({});
   const [loading, setLoading] = useState(false);
+  const dispatch = useAppDispatch();
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -47,12 +51,19 @@ const ProfileScreen = () => {
     fetchProfile();
   }, []);
 
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('currentUser');
+    dispatch(logoutUser());
+  };
+
   return (
     <Layout paddingTop={insets.top}>
       <AppHeader
         isLogo={false}
         title={'@' + profileData?.username}
-        rightIcon1={<Icon name="menu" size={24} color="#7b8cff" />}
+        rightIcon1={<Icon name="exit" size={24} color="#7b8cff" />}
+        onPressRightIcon1={handleLogout}
       />
 
       <View style={styles.avatarWrapper}>

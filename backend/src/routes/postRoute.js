@@ -10,6 +10,7 @@ import {
   getPostComments,
   toggleLikeComment,
   getFeed,
+  getUserPosts,
 } from "../controllers/postController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -32,5 +33,7 @@ router.delete("/comments/:commentId", protect, deleteComment);
 router.put("/comments/:commentId/like", protect, toggleLikeComment);
 
 router.get("/feed", protect, getFeed);
+
+router.get("/posts/user/:userId", protect, getUserPosts);
 
 export default router;

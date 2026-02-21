@@ -22,11 +22,10 @@ import {
   Modal,
   Keyboard,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useTheme } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import CancelIcon from 'react-native-vector-icons/MaterialIcons';
 import MessageDeleteIcon from 'react-native-vector-icons/Entypo';
-import { globalStyles, colors } from '../utils/styles';
 import Layout from './Layout';
 import ChatHeader from '../components/ChatHeader';
 import MessageBubble from '../components/MessageBubble';
@@ -48,6 +47,7 @@ import { formatLastSeen } from '../utils/time';
 import firestore from '@react-native-firebase/firestore';
 import { MenuProvider } from 'react-native-popup-menu';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { typography } from '../theme';
 
 const REACTIONS = ['❤️', '😂', '😮', '😢', '🙏', '👍'];
 
@@ -126,6 +126,7 @@ const ChatScreen = () => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [bottomHeight, setBottomHeight] = useState(80);
   const insests = useSafeAreaInsets();
+  const { colors }: any = useTheme();
 
   const allParticipants = [currentUid, otherUser.uid];
 
@@ -454,20 +455,19 @@ const ChatScreen = () => {
 
   if (loading) {
     return (
-      <View
-        style={[globalStyles.center, { backgroundColor: colors.background }]}
-      >
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <Layout>
+        <View
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <ActivityIndicator size="large" color={'#fff'} />
+        </View>
+      </Layout>
     );
   }
 
   return (
     <MenuProvider>
-      <Layout
-        statusBarColor={selectedMessageForMenu ? '#333' : colors.primary}
-        paddingTop={insests.top}
-      >
+      <Layout paddingTop={insests.top}>
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
           {selectedMessageForMenu ? (
             <View
@@ -547,11 +547,15 @@ const ChatScreen = () => {
               typing={isOtherTyping}
               isBlocked={isBlocked}
               otherUser={otherUser}
+              profileImage={otherUser.profilePicture}
             />
           )}
 
+          {/* FIX 1: marginBottom accounts for both the input bar height AND keyboard height,
+              so the last message is always fully visible above the input */}
           <FlatList
             ref={flatListRef}
+            showsVerticalScrollIndicator={false}
             data={messages}
             keyExtractor={(item: any) => item.id}
             renderItem={({ item, index }: any) => {
@@ -565,7 +569,12 @@ const ChatScreen = () => {
                     {showDateSeparator && (
                       <View style={styles.dateSeparatorContainer}>
                         <View style={styles.dateSeparatorLine} />
-                        <Text style={styles.dateSeparatorText}>
+                        <Text
+                          style={[
+                            styles.dateSeparatorText,
+                            { backgroundColor: colors.Colored_Text },
+                          ]}
+                        >
                           {getDateLabel(item.timestamp)}
                         </Text>
                         <View style={styles.dateSeparatorLine} />
@@ -606,7 +615,12 @@ const ChatScreen = () => {
                   {showDateSeparator && (
                     <View style={styles.dateSeparatorContainer}>
                       <View style={styles.dateSeparatorLine} />
-                      <Text style={styles.dateSeparatorText}>
+                      <Text
+                        style={[
+                          styles.dateSeparatorText,
+                          { backgroundColor: colors.Colored_Text },
+                        ]}
+                      >
                         {getDateLabel(item.timestamp)}
                       </Text>
                       <View style={styles.dateSeparatorLine} />
@@ -644,12 +658,17 @@ const ChatScreen = () => {
                 </>
               );
             }}
-            style={{ flex: 1, paddingHorizontal: 10 }}
-            contentContainerStyle={{
-              paddingBottom: bottomHeight,
+            style={{
+              flex: 1,
+              paddingHorizontal: 10,
+              // FIX: shrink the list so it never goes under the input bar or keyboard
+              marginBottom: bottomHeight + keyboardHeight,
             }}
+            contentContainerStyle={{ paddingBottom: 10 }}
           />
 
+          {/* FIX 2: bottomContainer stays at bottom: 0 and moves up with the keyboard
+              via the keyboardHeight offset. The FlatList margin above handles the rest. */}
           <View
             style={[
               styles.bottomContainer,
@@ -688,15 +707,25 @@ const ChatScreen = () => {
             ) : (
               <>
                 {replyingTo && (
-                  <View style={styles.replyPreviewContainer}>
+                  <View
+                    style={[
+                      styles.replyPreviewContainer,
+                      { borderLeftColor: colors.Text_Primary_Color },
+                    ]}
+                  >
                     <View style={styles.replyPreviewContent}>
                       <View style={styles.replyPreviewHeader}>
                         <Icon
                           name="arrow-undo"
                           size={16}
-                          color={colors.primary}
+                          color={colors.Colored_Text}
                         />
-                        <Text style={styles.replyPreviewTitle}>
+                        <Text
+                          style={{
+                            ...typography.Montserrat_Medium12,
+                            color: colors.Colored_Text,
+                          }}
+                        >
                           Replying to{' '}
                           {replyingTo.senderUid === currentUid
                             ? 'yourself'
@@ -711,7 +740,7 @@ const ChatScreen = () => {
                       <Icon
                         name="close-circle"
                         size={24}
-                        color={colors.textSecondary}
+                        color={colors.Colored_Text}
                       />
                     </TouchableOpacity>
                   </View>
@@ -729,7 +758,7 @@ const ChatScreen = () => {
                         <CancelIcon
                           name="cancel"
                           size={32}
-                          color={colors.primary}
+                          color={colors.Text_Primary_Color}
                         />
                       </TouchableOpacity>
                     )}
@@ -750,8 +779,11 @@ const ChatScreen = () => {
                       onPress={sendMessage}
                       style={[
                         styles.sendButton,
-                        (!text.trim() || !canSend) && {
-                          backgroundColor: '#ddd',
+                        {
+                          backgroundColor:
+                            !text.trim() || !canSend
+                              ? '#ddd'
+                              : colors.Colored_Text,
                         },
                       ]}
                       disabled={!text.trim() || !canSend}
@@ -826,7 +858,7 @@ const ChatScreen = () => {
           >
             <View
               style={{
-                backgroundColor: colors.background,
+                backgroundColor: '#cde4ee',
                 padding: 20,
                 borderRadius: 10,
                 width: '80%',
@@ -923,7 +955,6 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   sendButton: {
-    backgroundColor: colors.primary,
     padding: 10,
     borderRadius: 20,
     marginLeft: 8,
@@ -931,10 +962,6 @@ const styles = StyleSheet.create({
   cancelButton: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  cancelText: {
-    color: colors.primary,
-    fontSize: 16,
   },
   typingIndicator: {
     alignSelf: 'flex-start',
@@ -952,14 +979,13 @@ const styles = StyleSheet.create({
   selectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#333',
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderBottomRightRadius: 28,
     borderBottomLeftRadius: 28,
   },
   closeButton: {
-    marginRight: 15,
+    marginRight: 4,
   },
   selectionHeaderText: {
     flex: 1,
@@ -969,7 +995,7 @@ const styles = StyleSheet.create({
   },
   selectionActions: {
     flexDirection: 'row',
-    gap: 20,
+    gap: 10,
   },
   headerAction: {
     padding: 4,
@@ -1022,7 +1048,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
   },
   reactionButtonSelected: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#eee',
     borderRadius: 50,
   },
   dateSeparatorText: {
@@ -1030,7 +1056,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
     fontWeight: '600',
-    backgroundColor: colors.background,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 12,
@@ -1044,7 +1069,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
   },
   replyPreviewContent: {
     flex: 1,
@@ -1055,11 +1079,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
     gap: 6,
-  },
-  replyPreviewTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.primary,
   },
   replyPreviewText: {
     fontSize: 14,

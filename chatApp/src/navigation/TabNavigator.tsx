@@ -36,7 +36,7 @@ function CustomTabBar({ state, navigation }: any) {
   const { colors }: any = useTheme();
 
   return (
-    <View style={[styles.wrapper, { bottom: insets.bottom + 2 }]}>
+    <View style={[styles.wrapper, { bottom: insets.bottom + 10 }]}>
       <View
         style={[
           styles.container,

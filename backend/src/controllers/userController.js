@@ -28,7 +28,9 @@ export const getUserProfile = async (req, res) => {
     const user = await User.findOne({ username }).select("-password");
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     let isFollowing = false;
@@ -118,6 +120,18 @@ export const updateUserProfile = async (req, res) => {
 
     await user.save();
 
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(user._id.toString())
+      .set(
+        {
+          name: user.name,
+          profilePicture: user.profilePicture || null,
+        },
+        { merge: true },
+      );
+
     res.status(200).json({
       success: true,
       user: {
@@ -140,7 +154,9 @@ export const deleteUserProfile = async (req, res) => {
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Delete profile picture from Cloudinary
@@ -151,11 +167,14 @@ export const deleteUserProfile = async (req, res) => {
 
     // Delete Firebase Auth user
     await admin.auth().deleteUser(userId.toString());
+    await admin.firestore().collection("users").doc(userId).delete();
 
     // Delete MongoDB user
     await User.findByIdAndDelete(userId);
 
-    res.status(200).json({ message: "Account deleted successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Account deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -168,13 +187,16 @@ export const togglePrivateAccount = async (req, res) => {
     const user = await User.findById(myId);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     user.isPrivate = !user.isPrivate;
     await user.save();
 
     res.status(200).json({
+      success: true,
       message: `Account is now ${user.isPrivate ? "Private" : "Public"}`,
       isPrivate: user.isPrivate,
     });
@@ -198,7 +220,9 @@ export const followUser = async (req, res) => {
     ]);
 
     if (!currentUser || !targetUser) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Block check
@@ -234,6 +258,7 @@ export const followUser = async (req, res) => {
     }
 
     res.json({
+      success: true,
       message:
         status === "pending" ? "Follow request sent" : "Followed successfully",
       status,
@@ -255,7 +280,9 @@ export const acceptFollowRequest = async (req, res) => {
     });
 
     if (!follow) {
-      return res.status(404).json({ message: "Request not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Request not found" });
     }
 
     follow.status = "accepted";
@@ -266,7 +293,11 @@ export const acceptFollowRequest = async (req, res) => {
       User.findByIdAndUpdate(userId, { $inc: { followingCount: 1 } }),
     ]);
 
-    res.json({ message: "Request accepted", status: "following" });
+    res.json({
+      success: true,
+      message: "Request accepted",
+      status: "following",
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -283,7 +314,9 @@ export const unfollowUser = async (req, res) => {
     });
 
     if (!follow) {
-      return res.status(404).json({ message: "Relationship not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Relationship not found" });
     }
 
     if (follow.status === "accepted") {
@@ -296,6 +329,7 @@ export const unfollowUser = async (req, res) => {
     await follow.deleteOne();
 
     res.json({
+      success: true,
       message: "Unfollowed / Request cancelled",
       status: "not_following",
     });
@@ -320,7 +354,7 @@ export const blockUser = async (req, res) => {
       $addToSet: { blockedUsers: userId },
     });
 
-    res.json({ message: "User blocked" });
+    res.json({ success: true, message: "User blocked" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -373,6 +407,7 @@ export const getFollowers = async (req, res) => {
     const result = followers.map((f) => f.follower);
 
     res.json({
+      success: true,
       count: result.length,
       limit,
       offset,
@@ -402,6 +437,7 @@ export const getFollowing = async (req, res) => {
     const result = following.map((f) => f.following);
 
     res.json({
+      success: true,
       count: result.length,
       limit,
       offset,
