@@ -2,11 +2,11 @@ import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { useForm, FormProvider } from 'react-hook-form';
@@ -78,14 +78,15 @@ const RegisterScreen = () => {
       dispatch(setAccessToken(res?.token));
       await AsyncStorage.setItem('token', res?.token);
       await auth().signInWithCustomToken(res?.firebaseToken);
+
       const userProfile = await apiService.getMyProfile();
       if (!userProfile.success) {
         showWarning('Failed to get profile');
         setLoading(false);
         return;
       }
-      dispatch(setAuthenticated(true));
 
+      dispatch(setAuthenticated(true));
       await AsyncStorage.setItem('currentUser', JSON.stringify(userProfile));
 
       showSuccess('Account created successfully!');
@@ -99,121 +100,119 @@ const RegisterScreen = () => {
 
   return (
     <Layout marginHorizontal={14}>
-      <View style={{ flex: 1 }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.container}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {/* Logo */}
-          <View style={{ width: '100%', alignItems: 'center' }}>
-            <AppLogo />
-          </View>
-
-          {/* Title */}
-          <Text
-            style={{
-              ...typography.Montserrat_Bold28,
-              color: colors.Text_Primary_Color,
-            }}
-          >
-            Create Account
-          </Text>
-
-          <Text
-            style={{
-              ...typography.Montserrat_Regular16,
-              color: colors.Text_Secondary_Color,
-              marginBottom: 30,
-              marginTop: 5,
-              fontStyle: 'italic',
-            }}
-          >
-            Step into the light of Lumora
-          </Text>
-
-          <FormProvider {...methods}>
-            <View
-              style={[
-                styles.card,
-                {
-                  backgroundColor: colors.Card_Color,
-                  borderColor: colors.Border_Color,
-                  borderWidth: 0.5,
-                },
-              ]}
-            >
-              {/* Full Name */}
-              <TextField
-                name="name"
-                placeholder="Enter your full name"
-                LeftIcon={UserIcon}
-                returnKeyType="next"
-                inputRefs={inputRefs}
-                refName="username"
-                rules={{ required: 'Name is required' }}
-              />
-
-              {/* Username */}
-              <TextField
-                name="username"
-                placeholder="Enter your username"
-                LeftIcon={UserIcon}
-                returnKeyType="next"
-                inputRefs={inputRefs}
-                refName="email"
-                rules={{ required: 'Username is required' }}
-              />
-
-              {/* Email */}
-              {/* <TextField
-                name="email"
-                placeholder="Enter your email (optional)"
-                LeftIcon={UserIcon}
-                returnKeyType="next"
-                inputRefs={inputRefs}
-                refName="password"
-              /> */}
-
-              {/* Password */}
-              <TextField
-                name="password"
-                placeholder="Enter your password"
-                LeftIcon={LockIcon}
-                RightIcon={shouldShow ? CloseEyeIcon : OpenEyeIcon}
-                handleRightIconPress={() => setShouldShow(!shouldShow)}
-                secureTextEntry={!shouldShow}
-                returnKeyType="done"
-                inputRefs={inputRefs}
-                rules={{ required: 'Password is required' }}
-              />
-
-              {/* Register Button */}
-              <GradientButton
-                title="Register"
-                onPress={handleSubmit(onSubmit)}
-                disabled={loading}
-                loading={loading}
-              />
-
-              {/* Navigate to Login */}
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.footerText}>
-                  Already have an account?{' '}
-                  <Text style={styles.linkText}>Login</Text>
-                </Text>
-              </TouchableOpacity>
+          <View style={styles.container}>
+            {/* Logo */}
+            <View style={{ width: '100%', alignItems: 'center' }}>
+              <AppLogo />
             </View>
-          </FormProvider>
-        </KeyboardAvoidingView>
-      </View>
+
+            {/* Title */}
+            <Text
+              style={{
+                ...typography.Montserrat_Bold28,
+                color: colors.Text_Primary_Color,
+              }}
+            >
+              Create Account
+            </Text>
+
+            <Text
+              style={{
+                ...typography.Montserrat_Regular16,
+                color: colors.Text_Secondary_Color,
+                marginBottom: 30,
+                marginTop: 5,
+                fontStyle: 'italic',
+              }}
+            >
+              Step into the light of Lumora
+            </Text>
+
+            <FormProvider {...methods}>
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: colors.Card_Color,
+                    borderColor: colors.Border_Color,
+                    borderWidth: 0.5,
+                  },
+                ]}
+              >
+                {/* Full Name */}
+                <TextField
+                  name="name"
+                  placeholder="Enter your full name"
+                  LeftIcon={UserIcon}
+                  returnKeyType="next"
+                  inputRefs={inputRefs}
+                  refName="username"
+                  rules={{ required: 'Name is required' }}
+                />
+
+                {/* Username */}
+                <TextField
+                  name="username"
+                  placeholder="Enter your username"
+                  LeftIcon={UserIcon}
+                  returnKeyType="next"
+                  inputRefs={inputRefs}
+                  refName="password"
+                  rules={{ required: 'Username is required' }}
+                />
+
+                {/* Password */}
+                <TextField
+                  name="password"
+                  placeholder="Enter your password"
+                  LeftIcon={LockIcon}
+                  RightIcon={shouldShow ? CloseEyeIcon : OpenEyeIcon}
+                  handleRightIconPress={() => setShouldShow(!shouldShow)}
+                  secureTextEntry={!shouldShow}
+                  returnKeyType="done"
+                  inputRefs={inputRefs}
+                  rules={{ required: 'Password is required' }}
+                />
+
+                {/* Register Button */}
+                <GradientButton
+                  title="Register"
+                  onPress={handleSubmit(onSubmit)}
+                  disabled={loading}
+                  loading={loading}
+                />
+
+                {/* Navigate to Login */}
+                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                  <Text style={styles.footerText}>
+                    Already have an account?{' '}
+                    <Text style={styles.linkText}>Login</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </FormProvider>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Layout>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingTop: 40,
+    paddingBottom: 40,
   },
   card: {
     borderRadius: 24,

@@ -6,6 +6,7 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Layout from '../Layout';
@@ -56,6 +57,17 @@ const ProfileScreen = () => {
     await AsyncStorage.removeItem('currentUser');
     dispatch(logoutUser());
   };
+
+  if (loading)
+    return (
+      <Layout>
+        <View
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      </Layout>
+    );
 
   return (
     <Layout paddingTop={insets.top}>

@@ -17,7 +17,7 @@ class ApiService {
     }
   };
 
-   login = async (payload: any) => {
+  login = async (payload: any) => {
     console.log('PAYLOAD::', payload);
     try {
       const res = await ApiClient('/auth/login', {
@@ -45,7 +45,6 @@ class ApiService {
     }
   };
 
-
   //HOME
   getFeed = async () => {
     try {
@@ -58,9 +57,9 @@ class ApiService {
       console.log(error, 'error from getFeed');
       return error;
     }
-  }
+  };
 
-    getOtherUserProfile = async (payload: any) => {
+  getOtherUserProfile = async (payload: any) => {
     try {
       const res = await ApiClient(`/user/profile/${payload?.username}`, {
         method: 'GET',
@@ -73,6 +72,57 @@ class ApiService {
     }
   };
 
+  toggleLikePost = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/content/posts/${payload?.postId}/like`, {
+        method: 'PUT',
+      });
+      console.log(res, 'res from likeUnlikePost');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from likeUnlikePost');
+      return error;
+    }
+  };
+
+  followUser = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/user/profile/follow/${payload?.userId}`, {
+        method: 'POST',
+      });
+      console.log(res, 'res from FollowUser');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from FollowUser');
+      return error;
+    }
+  };
+
+  acceptFollowRequest = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/user/profile/accept/${payload?.userId}`, {
+        method: 'POST',
+      });
+      console.log(res, 'res from acceptFollowRequest');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from acceptFollowRequest');
+      return error;
+    }
+  };
+
+  unFollowUser = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/user/profile/unfollow/${payload?.userId}`, {
+        method: 'POST',
+      });
+      console.log(res, 'res from unFollowUser');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from unFollowUser');
+      return error;
+    }
+  };
 }
 
 const apiService = new ApiService();

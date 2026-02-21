@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -17,10 +17,11 @@ import Animated, {
   Extrapolate,
 } from 'react-native-reanimated';
 import { useNavigation, useTheme } from '@react-navigation/native';
+import apiService from '../api/apiService';
+import { useAppSelector } from '../redux/hooks';
 
 const { width } = Dimensions.get('window');
 
-/* -------------------- DOT COMPONENT -------------------- */
 const Dot = ({ index, scrollX }: { index: number; scrollX: any }) => {
   const animatedStyle = useAnimatedStyle(() => {
     const position = scrollX.value / width;
@@ -53,6 +54,9 @@ const PostCard = ({ post }: any) => {
   const scrollX = useSharedValue(0);
   const { colors }: any = useTheme();
   const naviagtion: any = useNavigation();
+  const [isLiked, setIsLiked] = useState(post?.isLiked ?? false);
+  const [likesCount, setLikesCount] = useState(post?.likesCount ?? 0);
+  const { currentUser } = useAppSelector(state => state.auth);
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: e => {
@@ -60,15 +64,21 @@ const PostCard = ({ post }: any) => {
     },
   });
 
-  // // Dummy data moved inside component
-  // const post = {
-  //   username: 'Elena_X',
-  //   userAvatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-  //   location: 'Tokyo, Future District',
-  //   images: ['https://images.unsplash.com/photo-1493612276216-ee3925520721'],
-  //   caption: 'Diving deep into the neon heart of Shinjuku 2077. #NeonVibes',
-  //   comments: 128,
-  // };
+  const handleToggleLike = async () => {
+    setIsLiked(!isLiked);
+    setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
+    try {
+      const res = await apiService.toggleLikePost({
+        postId: post?._id,
+      });
+
+      if (!res?.success) {
+        setIsLiked(!isLiked);
+      }
+    } catch (error) {
+      console.log('ERror in Toggle likepost', error);
+    }
+  };
 
   return (
     <View style={styles.card}>
@@ -77,6 +87,10 @@ const PostCard = ({ post }: any) => {
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Pressable
             onPress={() => {
+              if (post?.author?._id === currentUser?._id) {
+                naviagtion.navigate('Profile');
+                return;
+              }
               naviagtion.navigate('userProfile', {
                 username: post?.author?.username,
               });
@@ -140,8 +154,12 @@ const PostCard = ({ post }: any) => {
       {/* ACTION ROW */}
       <View style={styles.actions}>
         <View style={{ flexDirection: 'row', gap: 16 }}>
-          <TouchableOpacity>
-            <Icon name="heart-outline" size={24} color="#7b8cff" />
+          <TouchableOpacity onPress={handleToggleLike}>
+            {isLiked ? (
+              <Icon name="heart" size={24} color="#7b8cff" />
+            ) : (
+              <Icon name="heart-outline" size={24} color="#7b8cff" />
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity>
@@ -161,7 +179,7 @@ const PostCard = ({ post }: any) => {
       {/* STATS */}
       <View style={styles.stats}>
         <Text style={[styles.likes, { color: colors.Colored_Text }]}>
-          {post?.likesCount ?? 0} likes
+          {likesCount ?? 0} likes
         </Text>
       </View>
 

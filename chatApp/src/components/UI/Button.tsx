@@ -123,7 +123,7 @@ export const OutLineButton = ({
       backgroundColor: 'transparent',
       justifyContent: 'center',
       alignItems: 'center',
-      borderColor: colors.Text_Primary_Color,
+      borderColor: colors.Colored_Text,
     },
     gradient: {
       flex: 1,

@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../Layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
-import MessageIcon from 'react-native-vector-icons/Fontisto';
+import NotificationIcon from 'react-native-vector-icons/Fontisto';
 import PostCard from '../../components/PostCard';
 import Story from '../../components/Story';
 import { useAppSelector } from '../../redux/hooks';
@@ -45,7 +45,7 @@ const HomeScreen = () => {
       <AppHeader
         isLogo={true}
         rightIcon1={
-          <MessageIcon name="messenger" size={22} color={colors.Colored_Text} />
+          <NotificationIcon name="bell" size={22} color={colors.Colored_Text} />
         }
       />
       {/* <Story /> */}
@@ -56,6 +56,10 @@ const HomeScreen = () => {
         keyExtractor={(item: any) => item._id}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={<Story />}
+        contentContainerStyle={{
+          backgroundColor: '#111a30',
+          paddingBottom: 70,
+        }}
         ListFooterComponent={
           loading ? (
             <View

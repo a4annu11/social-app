@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Activity, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,13 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Layout from '../Layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
-import { GradientButton } from '../../components/UI/Button';
+import { GradientButton, OutLineButton } from '../../components/UI/Button';
 import { useTheme } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import { showError } from '../../utils/ToastMessage';
@@ -52,6 +53,64 @@ const ProfileScreen = ({ navigation, route }: any) => {
     fetchProfile();
   }, []);
 
+  const handleFollowAction = async () => {
+    try {
+      const userId = profileData?._id;
+      if (!userId) return;
+
+      if (profileData?.isFollowing) {
+        const res = await apiService.unFollowUser({ userId });
+
+        if (res?.success) {
+          setProfileData((prev: any) => ({
+            ...prev,
+            isFollowing: false,
+            followersCount: prev.followersCount - 1,
+          }));
+        }
+        return;
+      }
+
+      if (profileData?.isRequested) {
+        const res = await apiService.unFollowUser({ userId });
+
+        if (res?.success) {
+          setProfileData((prev: any) => ({
+            ...prev,
+            isRequested: false,
+          }));
+        }
+        return;
+      }
+
+      const res = await apiService.followUser({ userId });
+
+      if (res?.success) {
+        if (profileData?.isPrivate) {
+          setProfileData((prev: any) => ({
+            ...prev,
+            isRequested: true,
+          }));
+        } else {
+          setProfileData((prev: any) => ({
+            ...prev,
+            isFollowing: true,
+            followersCount: prev.followersCount + 1,
+          }));
+        }
+      }
+    } catch (error) {
+      console.log('Follow error:', error);
+      showError('Something went wrong');
+    }
+  };
+  const getFollowButtonTitle = () => {
+    if (profileData?.isFollowing) return 'Unfollow';
+    if (profileData?.isRequested) return 'Requested';
+    if (profileData?.isPrivate) return 'Request';
+    return 'Follow';
+  };
+
   const handleStartChat = async () => {
     try {
       const currentUid = auth().currentUser?.uid;
@@ -83,6 +142,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
     }
   };
 
+  if (loading)
+    return (
+      <Layout>
+        <View
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      </Layout>
+    );
   return (
     <Layout paddingTop={insets.top}>
       <AppHeader
@@ -100,9 +169,6 @@ const ProfileScreen = ({ navigation, route }: any) => {
           }
           style={styles.avatar}
         />
-        <View style={styles.plusIconWrapper}>
-          <Icon name="add" size={16} color="#fff" />
-        </View>
       </View>
 
       <Text
@@ -186,7 +252,14 @@ const ProfileScreen = ({ navigation, route }: any) => {
         }}
       >
         <View style={{ flex: 1 }}>
-          <GradientButton title="Follow" onPress={() => {}} />
+          {profileData?.isFollowing ? (
+            <OutLineButton title="Unfollow" onPress={handleFollowAction} />
+          ) : (
+            <GradientButton
+              title={getFollowButtonTitle()}
+              onPress={handleFollowAction}
+            />
+          )}
         </View>
 
         <TouchableOpacity
