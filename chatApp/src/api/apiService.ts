@@ -180,6 +180,73 @@ class ApiService {
       return null;
     }
   };
+
+  createPost = async (payload: any) => {
+    try {
+      const res = await ApiClient('/content/posts', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      console.log(res, 'res from createPost');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from createPost');
+      return error;
+    }
+  };
+
+  //STORY
+  createStory = async (payload: any) => {
+    try {
+      const res = await ApiClient('/story/create', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      console.log(res, 'res from createStory');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from createStory');
+      return error;
+    }
+  };
+  viewStory = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/story/view/${payload?.storyId}`, {
+        method: 'POST',
+      });
+      console.log(res, 'res from viewStory');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from viewStory');
+      return error;
+    }
+  };
+
+  getStoryViewers = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/story/get/viewers/${payload?.storyId}`, {
+        method: 'GET',
+      });
+      console.log(res, 'res from getStoryViewers');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getStoryViewers');
+      return error;
+    }
+  };
+
+  getStoryFeed = async () => {
+    try {
+      const res = await ApiClient('/story/story-feed', {
+        method: 'GET',
+      });
+      console.log(res, 'res from getStoryFeed');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getStoryFeed');
+      return error;
+    }
+  };
 }
 
 const apiService = new ApiService();

@@ -23,6 +23,7 @@ const HomeScreen = () => {
   console.log('HOME CURRENT USER', currentUser);
   const [feedData, setFeedData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [storyData, setStoryData] = useState([]);
 
   const fetchFeed = async () => {
     setLoading(true);
@@ -36,7 +37,17 @@ const HomeScreen = () => {
     }
   };
 
+  const fetchStories = async () => {
+    try {
+      const res = await apiService.getStoryFeed();
+      setStoryData(res?.stories || []);
+    } catch (error) {
+      console.log('Error in GET STORY FEED', error);
+    }
+  };
+
   useEffect(() => {
+    fetchStories();
     fetchFeed();
   }, []);
 
@@ -55,7 +66,7 @@ const HomeScreen = () => {
         renderItem={({ item }: any) => <PostCard post={item} />}
         keyExtractor={(item: any) => item._id}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={<Story />}
+        ListHeaderComponent={<Story stories={storyData} />}
         contentContainerStyle={{
           backgroundColor: '#111a30',
           paddingBottom: 70,

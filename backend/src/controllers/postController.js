@@ -3,33 +3,49 @@ import cloudinary from "../config/cloudinary.js";
 import Comment from "../models/Comment.js";
 import Post from "../models/Post.js";
 
+// export const createPost = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { caption, media } = req.body;
+
+//     // media = array of base64 strings or urls
+//     const uploadedMedia = [];
+
+//     if (media && media.length > 0) {
+//       for (let item of media) {
+//         const uploadRes = await cloudinary.uploader.upload(item, {
+//           folder: "posts",
+//           resource_type: "auto", // supports image + video
+//         });
+
+//         uploadedMedia.push({
+//           url: uploadRes.secure_url,
+//           public_id: uploadRes.public_id,
+//           type: uploadRes.resource_type,
+//         });
+//       }
+//     }
+
+//     const post = await Post.create({
+//       author: userId,
+//       caption,
+//       media: uploadedMedia,
+//     });
+
+//     res.status(201).json({ success: true, post });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
 export const createPost = async (req, res) => {
   try {
     const userId = req.user.id;
     const { caption, media } = req.body;
 
-    // media = array of base64 strings or urls
-    const uploadedMedia = [];
-
-    if (media && media.length > 0) {
-      for (let item of media) {
-        const uploadRes = await cloudinary.uploader.upload(item, {
-          folder: "posts",
-          resource_type: "auto", // supports image + video
-        });
-
-        uploadedMedia.push({
-          url: uploadRes.secure_url,
-          public_id: uploadRes.public_id,
-          type: uploadRes.resource_type,
-        });
-      }
-    }
-
     const post = await Post.create({
       author: userId,
       caption,
-      media: uploadedMedia,
+      media, // already uploaded from frontend
     });
 
     res.status(201).json({ success: true, post });
@@ -37,7 +53,6 @@ export const createPost = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 export const updatePost = async (req, res) => {
   try {
     const userId = req.user.id;

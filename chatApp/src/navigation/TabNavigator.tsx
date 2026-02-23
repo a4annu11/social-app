@@ -8,7 +8,7 @@ import HomeScreen from '../screens/TabScreens/HomeScreen';
 import UsersScreen from '../screens/TabScreens/UsersScreen';
 import MessagesScreen from '../screens/TabScreens/MessagesScreen';
 import ProfileScreen from '../screens/TabScreens/ProfileScreen';
-import GroupsScreen from '../screens/TabScreens/GroupsScreen';
+import CreatePostScreen from '../screens/TabScreens/CreatePost';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
 
@@ -24,7 +24,7 @@ const TabNavigator = () => {
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Users" component={UsersScreen} />
         <Tab.Screen name="Messages" component={MessagesScreen} />
-        <Tab.Screen name="Groups" component={GroupsScreen} />
+        <Tab.Screen name="CreatePost" component={CreatePostScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>
     </View>
@@ -69,7 +69,7 @@ function CustomTabBar({ state, navigation }: any) {
 
         <TabIcon
           icon="compass"
-          route="Groups"
+          route="CreatePost"
           state={state}
           navigation={navigation}
           index={3}

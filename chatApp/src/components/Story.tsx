@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,46 +9,68 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
+import { useAppSelector } from '../redux/hooks';
 
-const Story = () => {
-  const stories = [
-    {
-      id: '1',
-      username: 'You',
-      avatar: 'https://i.pravatar.cc/150?img=1',
-      isOwn: true,
-    },
-    {
-      id: '2',
-      username: 'Elena_X',
-      avatar: 'https://i.pravatar.cc/150?img=2',
-    },
-    {
-      id: '3',
-      username: 'CyberV',
-      avatar: 'https://i.pravatar.cc/150?img=3',
-    },
-    {
-      id: '4',
-      username: 'NeoGlow',
-      avatar: 'https://i.pravatar.cc/150?img=4',
-    },
-    {
-      id: '5',
-      username: 'Zion_3',
-      avatar: 'https://i.pravatar.cc/150?img=5',
-    },
-  ];
+const Story = ({ stories }: any) => {
+  const navigation: any = useNavigation();
+  const { currentUser } = useAppSelector(state => state.auth);
+
+  //  Transform backend response
+  const formattedStories = useMemo(() => {
+    if (!stories) return [];
+
+    const mapped = stories.map((item: any) => ({
+      id: item._id,
+      userId: item.user._id,
+      avatar: item.user.profilePicture,
+      username: item.user.username,
+      isOwn: item.user._id === currentUser?._id,
+      hasUnseen: item.hasUnseen === 1,
+      stories: item.stories,
+    }));
+
+    // Move own story to first
+    const own = mapped.find((s: any) => s.isOwn);
+    const others = mapped.filter((s: any) => !s.isOwn);
+
+    return own ? [own, ...others] : mapped;
+  }, [stories, currentUser]);
 
   const renderItem = ({ item }: any) => {
+    const borderColors = item.hasUnseen
+      ? ['#7b8cff', '#b06ab3']
+      : ['#444', '#444'];
+
     return (
-      <TouchableOpacity style={styles.storyContainer}>
-        <LinearGradient
-          colors={['#7b8cff', '#b06ab3']}
-          style={styles.gradientBorder}
-        >
+      <TouchableOpacity
+        style={styles.storyContainer}
+        onPress={() => {
+          const startUserIndex = formattedStories.findIndex(
+            (s: any) => s.id === item.id,
+          );
+
+          if (item.isOwn && item.stories.length === 0) {
+            navigation.navigate('CreateStory');
+            return;
+          }
+
+          navigation.navigate('StoryViewer', {
+            allStories: formattedStories,
+            startUserIndex,
+          });
+        }}
+      >
+        <LinearGradient colors={borderColors} style={styles.gradientBorder}>
           <View style={styles.imageWrapper}>
-            <Image source={{ uri: item.avatar }} style={styles.avatar} />
+            <Image
+              source={
+                item.avatar
+                  ? { uri: item.avatar }
+                  : require('../../assets/images/default-user.png')
+              }
+              style={styles.avatar}
+            />
 
             {item.isOwn && (
               <View style={styles.plusIcon}>
@@ -68,7 +90,7 @@ const Story = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={stories}
+        data={formattedStories}
         renderItem={renderItem}
         keyExtractor={item => item.id}
         horizontal
@@ -84,7 +106,6 @@ export default Story;
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 14,
-    // backgroundColor: '#0f172a',
   },
   storyContainer: {
     alignItems: 'center',
