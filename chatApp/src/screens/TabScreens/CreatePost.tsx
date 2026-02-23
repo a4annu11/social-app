@@ -3,20 +3,18 @@ import {
   StyleSheet,
   Text,
   View,
-  Image,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
-  FlatList,
 } from 'react-native';
 import Layout from '../Layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, useNavigation } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
-import Icon from 'react-native-vector-icons/Ionicons';
 import apiService from '../../api/apiService';
 import { uploadToCloudinary } from '../../utils/cloudinaryUpload';
+import { showError, showSuccess, showWarning } from '../../utils/ToastMessage';
+import DeckCarousel from '../../components/DeckCard';
 
 const CreatePostScreen = () => {
   const insets = useSafeAreaInsets();
@@ -27,59 +25,57 @@ const CreatePostScreen = () => {
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 📌 Pick Media
+  // ── Pick Media ────────────────────────────────────────────────────
   const handlePickMedia = async () => {
-    const result = await launchImageLibrary({
+    const result: any = await launchImageLibrary({
       mediaType: 'mixed',
       selectionLimit: 5,
       quality: 0.8,
     });
 
     if (result.didCancel) return;
-
     if (result.assets) {
       setSelectedMedia(prev => [...prev, ...result.assets]);
     }
   };
 
-  // ❌ Remove selected image
-  const handleRemoveMedia = (index: number) => {
-    const updated = [...selectedMedia];
-    updated.splice(index, 1);
-    setSelectedMedia(updated);
+  // ── Remove by index (X button only) ──────────────────────────────
+  const handleRemove = (index: number) => {
+    setSelectedMedia(prev => prev.filter((_, i) => i !== index));
   };
 
-  // 🚀 Create Post
+  // ── Create Post ───────────────────────────────────────────────────
   const handleCreatePost = async () => {
-    if (!selectedMedia.length) {
-      Alert.alert('Error', 'Please select media');
+    if (!caption.trim() && selectedMedia.length === 0) {
+      showWarning('Please add a caption or select media');
       return;
     }
 
     try {
       setLoading(true);
 
-      // 🔥 Upload all media in parallel (FAST)
-      const uploadedMedia = await Promise.all(
-        selectedMedia.map(file => uploadToCloudinary(file)),
-      );
+      let uploadedMedia: any[] = [];
+      if (selectedMedia.length > 0) {
+        uploadedMedia = await Promise.all(
+          selectedMedia.map(file => uploadToCloudinary(file)),
+        );
+      }
 
       const payload = {
-        caption,
-        media: uploadedMedia,
+        caption: caption.trim(),
+        ...(uploadedMedia.length > 0 && { media: uploadedMedia }),
       };
 
       const res = await apiService.createPost(payload);
 
       if (res?.success) {
-        Alert.alert('Success', 'Post created successfully');
+        showSuccess('Post created successfully');
         navigation.goBack();
       } else {
-        Alert.alert('Error', 'Something went wrong');
+        showError('Failed to create post');
       }
-    } catch (error) {
-      console.log(error);
-      Alert.alert('Error', 'Upload failed');
+    } catch {
+      showError('Upload failed');
     } finally {
       setLoading(false);
     }
@@ -93,31 +89,10 @@ const CreatePostScreen = () => {
           <Text style={styles.pickButtonText}>Pick Media</Text>
         </TouchableOpacity>
 
-        {/* Media Preview List */}
-        <FlatList
-          data={selectedMedia}
-          horizontal
-          keyExtractor={(_, index) => index.toString()}
-          showsHorizontalScrollIndicator={false}
-          style={{ marginVertical: 12 }}
-          renderItem={({ item, index }) => (
-            <View style={styles.imageWrapper}>
-              <Image
-                source={{ uri: item.uri }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-
-              {/* Cancel Icon */}
-              <TouchableOpacity
-                style={styles.cancelIcon}
-                onPress={() => handleRemoveMedia(index)}
-              >
-                <Icon name="close" size={16} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          )}
-        />
+        {/* Carousel */}
+        {selectedMedia.length > 0 && (
+          <DeckCarousel media={selectedMedia} onRemove={handleRemove} />
+        )}
 
         {/* Caption */}
         <TextInput
@@ -133,11 +108,7 @@ const CreatePostScreen = () => {
         <TouchableOpacity
           style={[
             styles.button,
-            {
-              backgroundColor: loading ? '#999' : '#6C63FF',
-              borderWidth: 2,
-              marginBottom: 70,
-            },
+            { backgroundColor: loading ? '#999' : '#6C63FF', marginBottom: 70 },
           ]}
           disabled={loading}
           onPress={handleCreatePost}
@@ -162,41 +133,26 @@ const styles = StyleSheet.create({
   },
   pickButton: {
     backgroundColor: '#333',
-    padding: 12,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 14,
     alignItems: 'center',
+    marginBottom: 20,
   },
   pickButtonText: {
     color: '#fff',
     fontWeight: '600',
   },
-  imageWrapper: {
-    marginRight: 12,
-  },
-  image: {
-    width: 120,
-    height: 120,
-    borderRadius: 16,
-  },
-  cancelIcon: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 20,
-    padding: 4,
-  },
   captionInput: {
-    minHeight: 100,
-    borderRadius: 12,
-    padding: 12,
+    minHeight: 110,
+    borderRadius: 18,
+    padding: 16,
     backgroundColor: '#1c1c1e',
     marginBottom: 20,
     textAlignVertical: 'top',
   },
   button: {
-    paddingVertical: 14,
-    borderRadius: 30,
+    paddingVertical: 16,
+    borderRadius: 40,
     alignItems: 'center',
     marginTop: 'auto',
   },

@@ -45,7 +45,7 @@ export const createPost = async (req, res) => {
     const post = await Post.create({
       author: userId,
       caption,
-      media, // already uploaded from frontend
+      media: media || [], // already uploaded from frontend
     });
 
     res.status(201).json({ success: true, post });
@@ -53,6 +53,59 @@ export const createPost = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// export const updatePost = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { postId } = req.params;
+//     const { caption, media } = req.body;
+
+//     const post = await Post.findById(postId);
+//     if (!post) return res.status(404).json({ message: "Post not found" });
+
+//     if (post.author.toString() !== userId)
+//       return res.status(403).json({ message: "Unauthorized" });
+
+//     // Update caption
+//     if (caption !== undefined) {
+//       post.caption = caption;
+//     }
+
+//     // If media is provided, replace all media
+//     if (media && media.length > 0) {
+//       // 1️⃣ Delete old media safely using public_id
+//       for (let item of post.media) {
+//         await cloudinary.uploader.destroy(item.public_id, {
+//           resource_type: item.type,
+//         });
+//       }
+
+//       // 2️⃣ Upload new media
+//       const uploadedMedia = [];
+
+//       for (let item of media) {
+//         const uploadRes = await cloudinary.uploader.upload(item, {
+//           folder: "posts",
+//           resource_type: "auto",
+//         });
+
+//         uploadedMedia.push({
+//           url: uploadRes.secure_url,
+//           public_id: uploadRes.public_id, // IMPORTANT
+//           type: uploadRes.resource_type,
+//         });
+//       }
+
+//       post.media = uploadedMedia;
+//     }
+
+//     await post.save();
+
+//     res.json({ success: true, post });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
 export const updatePost = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -70,32 +123,24 @@ export const updatePost = async (req, res) => {
       post.caption = caption;
     }
 
-    // If media is provided, replace all media
-    if (media && media.length > 0) {
-      // 1️⃣ Delete old media safely using public_id
-      for (let item of post.media) {
+    if (media) {
+      // Find deleted media
+      const oldPublicIds = post.media.map((item) => item.public_id);
+      const newPublicIds = media.map((item) => item.public_id);
+
+      const removedMedia = post.media.filter(
+        (item) => !newPublicIds.includes(item.public_id),
+      );
+
+      //  Delete only removed files
+      for (let item of removedMedia) {
         await cloudinary.uploader.destroy(item.public_id, {
           resource_type: item.type,
         });
       }
 
-      // 2️⃣ Upload new media
-      const uploadedMedia = [];
-
-      for (let item of media) {
-        const uploadRes = await cloudinary.uploader.upload(item, {
-          folder: "posts",
-          resource_type: "auto",
-        });
-
-        uploadedMedia.push({
-          url: uploadRes.secure_url,
-          public_id: uploadRes.public_id, // IMPORTANT
-          type: uploadRes.resource_type,
-        });
-      }
-
-      post.media = uploadedMedia;
+      // Replace media array
+      post.media = media;
     }
 
     await post.save();
@@ -105,6 +150,32 @@ export const updatePost = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// export const deletePost = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { postId } = req.params;
+
+//     const post = await Post.findById(postId);
+//     if (!post) return res.status(404).json({ message: "Post not found" });
+
+//     if (post.author.toString() !== userId)
+//       return res.status(403).json({ message: "Unauthorized" });
+
+//     // Delete media from Cloudinary safely
+//     for (let item of post.media) {
+//       await cloudinary.uploader.destroy(item.public_id, {
+//         resource_type: item.type,
+//       });
+//     }
+
+//     await Comment.deleteMany({ post: postId });
+//     await post.deleteOne();
+
+//     res.json({ success: true, message: "Post deleted successfully" });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
 
 export const deletePost = async (req, res) => {
   try {
@@ -117,12 +188,14 @@ export const deletePost = async (req, res) => {
     if (post.author.toString() !== userId)
       return res.status(403).json({ message: "Unauthorized" });
 
-    // Delete media from Cloudinary safely
-    for (let item of post.media) {
-      await cloudinary.uploader.destroy(item.public_id, {
-        resource_type: item.type,
-      });
-    }
+    //  Delete all media in parallel
+    await Promise.all(
+      post.media.map((item) =>
+        cloudinary.uploader.destroy(item.public_id, {
+          resource_type: item.type,
+        }),
+      ),
+    );
 
     await Comment.deleteMany({ post: postId });
     await post.deleteOne();
@@ -132,7 +205,6 @@ export const deletePost = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 export const getSinglePost = async (req, res) => {
   try {
     const userId = req.user.id;
