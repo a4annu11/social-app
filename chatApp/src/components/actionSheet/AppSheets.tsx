@@ -164,7 +164,7 @@ export const CommentSheet = (props: any) => {
 
       setText('');
 
-      //  If replying to parent
+      //replying to parent
       if (replyTo) {
         setComments(prev =>
           prev.map(comment =>
@@ -177,7 +177,7 @@ export const CommentSheet = (props: any) => {
           ),
         );
       } else {
-        // Normal root comment
+        // root comment
         setComments(prev => [newComment, ...prev]);
       }
 
@@ -188,66 +188,129 @@ export const CommentSheet = (props: any) => {
   //Delete Comment
   const handleDelete = async (commentId: string) => {
     await apiService.deleteComment({ commentId });
-    fetchComments();
+    // fetchComments();
+  };
+
+  const handleToggleLike = async (commentId: string) => {
+    setComments(prev =>
+      prev.map(comment => {
+        if (comment._id === commentId) {
+          const isLiked = comment.likes?.includes(currentUser._id);
+
+          return {
+            ...comment,
+            likes: isLiked
+              ? comment.likes.filter((id: string) => id !== currentUser._id)
+              : [...(comment.likes || []), currentUser._id],
+          };
+        }
+
+        return {
+          ...comment,
+          replies: comment.replies?.map((reply: any) => {
+            if (reply._id === commentId) {
+              const isLiked = reply.likes?.includes(currentUser._id);
+
+              return {
+                ...reply,
+                likes: isLiked
+                  ? reply.likes.filter((id: string) => id !== currentUser._id)
+                  : [...(reply.likes || []), currentUser._id],
+              };
+            }
+            return reply;
+          }),
+        };
+      }),
+    );
+
+    const res = await apiService.toggleLikeComment(commentId);
+
+    if (!res?.success) {
+      fetchComments();
+    }
   };
 
   const renderComment = ({ item }: any) => {
     return (
       <View style={{ marginBottom: 16 }}>
-        <TouchableOpacity activeOpacity={0.8}>
-          <View style={{ flexDirection: 'row' }}>
-            <Image
-              source={
-                item.author?.profilePicture
-                  ? { uri: item.author.profilePicture }
-                  : require('../../../assets/images/default-user.png')
-              }
-              style={styles.avatar}
-            />
+        <View style={{ flexDirection: 'row' }}>
+          <Image
+            source={
+              item.author?.profilePicture
+                ? { uri: item.author.profilePicture }
+                : require('../../../assets/images/default-user.png')
+            }
+            style={styles.avatar}
+          />
 
-            <View style={{ flex: 1 }}>
-              <View
+          <View style={{ flex: 1 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
+                  color: colors.Text_Primary_Color,
+                  flex: 1,
                 }}
               >
-                <Text
-                  style={{
-                    color: colors.Text_Primary_Color,
-                    flex: 1,
+                <Text style={{ fontWeight: '700' }}>
+                  {item.author.username}{' '}
+                </Text>
+                {item.text}
+              </Text>
+
+              {/* <View style={{ flexDirection: 'row' }}>
+                <TouchableOpacity onPress={() => handleToggleLike(item._id)}>
+                  <Icon
+                    name={
+                      item.likes?.includes(currentUser._id) ? 'heart' : 'heart'
+                    }
+                    size={16}
+                    color={
+                      item.likes?.includes(currentUser._id)
+                        ? '#ff3b5c'
+                        : colors.Text_Primary_Color
+                    }
+                  />
+                </TouchableOpacity>
+
+                {item.likes?.length > 0 && (
+                  <Text style={{ marginLeft: 6, fontSize: 12, color: '#888' }}>
+                    {item.likes.length}
+                  </Text>
+                )}
+              </View> */}
+
+              {item.author._id === currentUser._id && (
+                <TouchableOpacity
+                  onPress={() => {
+                    handleDelete(item._id);
+                    setComments(prev =>
+                      prev.filter(comment => comment._id !== item._id),
+                    );
                   }}
                 >
-                  <Text style={{ fontWeight: '700' }}>
-                    {item.author.username}{' '}
-                  </Text>
-                  {item.text}
-                </Text>
-
-                {item.author._id === currentUser._id && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      handleDelete(item._id);
-                    }}
-                  >
-                    <Icon
-                      name="trash"
-                      size={16}
-                      color={colors.Text_Primary_Color}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <TouchableOpacity
-                onPress={() => setReplyTo(item)}
-                style={{ marginTop: 4 }}
-              >
-                <Text style={{ fontSize: 12, color: '#888' }}>Reply</Text>
-              </TouchableOpacity>
+                  <Icon
+                    name="trash"
+                    size={16}
+                    color={colors.Text_Primary_Color}
+                  />
+                </TouchableOpacity>
+              )}
             </View>
+
+            <TouchableOpacity
+              onPress={() => setReplyTo(item)}
+              style={{ marginTop: 4 }}
+            >
+              <Text style={{ fontSize: 12, color: '#888' }}>Reply</Text>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
 
         {item.replies?.map((reply: any) => (
           <View
@@ -286,12 +349,34 @@ export const CommentSheet = (props: any) => {
                   {reply.text}
                 </Text>
 
+                {/* <View style={{ flexDirection: 'row' }}>
+                  <TouchableOpacity onPress={() => handleToggleLike(reply._id)}>
+                    <Icon
+                      name="heart"
+                      size={14}
+                      color={
+                        reply.likes?.includes(currentUser._id)
+                          ? '#ff3b5c'
+                          : colors.Text_Primary_Color
+                      }
+                    />
+                  </TouchableOpacity>
+
+                  {reply.likes?.length > 0 && (
+                    <Text
+                      style={{ marginLeft: 6, fontSize: 11, color: '#888' }}
+                    >
+                      {reply.likes.length}
+                    </Text>
+                  )}
+                </View> */}
+
                 {reply.author._id === currentUser._id && (
                   <TouchableOpacity
                     onPress={async () => {
                       await handleDelete(reply._id);
 
-                      // 🔥 Remove locally without refetch
+                      // Remove locally without refetch
                       setComments(prev =>
                         prev.map(comment => ({
                           ...comment,
@@ -388,6 +473,8 @@ export const CommentSheet = (props: any) => {
           keyExtractor={(item: any) => item._id}
           renderItem={renderComment}
           showsVerticalScrollIndicator={false}
+          overScrollMode="never"
+          bounces={false}
         />
       )}
 

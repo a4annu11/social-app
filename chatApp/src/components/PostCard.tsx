@@ -198,7 +198,14 @@ const PostCard = ({ post }: any) => {
         {post?.caption ?? ''}
       </Text>
 
-      <Text style={styles.comments}>
+      <Text
+        style={styles.comments}
+        onPress={() => {
+          SheetManager.show('CommentSheet', {
+            payload: { postId: post?._id },
+          });
+        }}
+      >
         View all {post?.commentsCount ?? 0} comments
       </Text>
     </View>

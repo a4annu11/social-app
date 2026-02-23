@@ -169,6 +169,17 @@ class ApiService {
       return error;
     }
   };
+  toggleLikeComment = async (commentId: string) => {
+    try {
+      const res = await ApiClient(`/content/comments/${commentId}/like`, {
+        method: 'PUT',
+      });
+      return res;
+    } catch (error) {
+      console.log(error, 'error from toggleLikeComment');
+      return null;
+    }
+  };
 }
 
 const apiService = new ApiService();
