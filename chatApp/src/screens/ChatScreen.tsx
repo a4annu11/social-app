@@ -756,7 +756,16 @@ const ChatScreen = () => {
                   </View>
                 )}
                 <View style={styles.inputWrapper}>
-                  <View style={styles.inputContainer}>
+                  <View
+                    style={[
+                      styles.inputContainer,
+                      {
+                        backgroundColor: '#0b1220',
+                        borderColor: colors.Border_Color,
+                        borderWidth: 1,
+                      },
+                    ]}
+                  >
                     {editingMessageId && (
                       <TouchableOpacity
                         onPress={() => {
@@ -776,6 +785,7 @@ const ChatScreen = () => {
                       style={styles.textInput}
                       value={text}
                       onChangeText={handleInputChange}
+                      placeholderTextColor={'#888383'}
                       placeholder={
                         editingMessageId
                           ? 'Edit message...'
@@ -941,7 +951,6 @@ const ChatScreen = () => {
 const styles = StyleSheet.create({
   inputWrapper: {
     width: '100%',
-    backgroundColor: 'transparent',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -951,7 +960,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: '#fff',
+    // backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 3 },
@@ -962,7 +971,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 12,
     fontSize: 16,
-    color: '#333',
+    color: '#ddeaeb',
   },
   sendButton: {
     padding: 10,

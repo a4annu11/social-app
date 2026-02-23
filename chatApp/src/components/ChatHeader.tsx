@@ -98,18 +98,10 @@ const ChatHeader = ({
             <Text numberOfLines={1} style={styles.nameText}>
               {name || 'Chat'}
             </Text>
-            {isOnline && <View style={styles.onlineDot} />}
+            {/* {isOnline && <View style={styles.onlineDot} />} */}
           </View>
 
-          <Text style={styles.statusText}>
-            {typing
-              ? 'Typing...'
-              : isOnline
-              ? 'Online'
-              : lastSeen
-              ? `Last seen ${lastSeen}`
-              : ''}
-          </Text>
+          {typing && <Text style={styles.statusText}>{'Typing...'}</Text>}
         </View>
       </View>
 

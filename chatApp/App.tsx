@@ -12,34 +12,29 @@ import { Provider } from 'react-redux';
 import { persistor, store } from './src/redux/store';
 import { PersistGate } from 'redux-persist/integration/react';
 import { theme } from './src/theme';
+import './src/components/actionSheet/sheets';
 
 const App = () => {
   const scheme = useColorScheme();
   const currentTheme = scheme === 'dark' ? theme.dark : theme.light;
 
   return (
- <GestureHandlerRootView style={{ flex: 1 }}>
-    <Provider store={store}>
-      <SafeAreaProvider>
-        <PersistGate loading={null} persistor={persistor}>
-          <ConversationProvider>
-
-
-         
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <SafeAreaProvider>
+          <PersistGate loading={null} persistor={persistor}>
+            <ConversationProvider>
               <NavigationContainer theme={currentTheme}>
-               
                 <SheetProvider>
                   <FlashMessage position="top" duration={2000} />
                   <RootNavigator />
                 </SheetProvider>
-              
-              </NavigationContainer>         
-          </ConversationProvider>
-        </PersistGate>
-      </SafeAreaProvider>
-    </Provider>
+              </NavigationContainer>
+            </ConversationProvider>
+          </PersistGate>
+        </SafeAreaProvider>
+      </Provider>
     </GestureHandlerRootView>
-
   );
 };
 

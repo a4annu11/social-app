@@ -16,6 +16,7 @@ export const theme = {
       Border_Color: '#FFFFFF80',
       Black_Color: '#000000',
       Colored_Text: '#7b8cff',
+      Sheet_BG_Color: '#202c44',
     },
   },
   dark: {
@@ -33,6 +34,7 @@ export const theme = {
       Border_Color: '#FFFFFF80',
       Black_Color: '#000000',
       Colored_Text: '#7b8cff',
+      Sheet_BG_Color: '#202c44',
     },
   },
 };

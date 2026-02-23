@@ -12,6 +12,7 @@ const AppHeader = ({
   onPressRightIcon1,
   rightIcon2,
   onPressRightIcon2,
+  showBackButton = true,
 }: any) => {
   const { colors }: any = useTheme();
   const navigation = useNavigation();
@@ -29,9 +30,11 @@ const AppHeader = ({
         {isLogo ? (
           <AppNameLogo />
         ) : (
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color={colors.Colored_Text} />
-          </TouchableOpacity>
+          showBackButton && (
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icon name="arrow-back" size={24} color={colors.Colored_Text} />
+            </TouchableOpacity>
+          )
         )}
         <Text
           style={{

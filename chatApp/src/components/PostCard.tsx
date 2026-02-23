@@ -19,6 +19,7 @@ import Animated, {
 import { useNavigation, useTheme } from '@react-navigation/native';
 import apiService from '../api/apiService';
 import { useAppSelector } from '../redux/hooks';
+import { SheetManager } from 'react-native-actions-sheet';
 
 const { width } = Dimensions.get('window');
 
@@ -162,7 +163,13 @@ const PostCard = ({ post }: any) => {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              SheetManager.show('CommentSheet', {
+                payload: { postId: post?._id },
+              })
+            }
+          >
             <Icon name="chatbubble-outline" size={22} color="#aaa" />
           </TouchableOpacity>
 

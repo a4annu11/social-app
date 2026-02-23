@@ -178,11 +178,18 @@ export const addComment = async (req, res) => {
     const { postId } = req.params;
     const { text, parentComment } = req.body;
 
+    if (!text?.trim()) {
+      return res.status(400).json({ message: "Comment text required" });
+    }
+
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    if (!text?.trim())
-      return res.status(400).json({ message: "Comment text required" });
+    if (parentComment) {
+      const parent = await Comment.findById(parentComment);
+      if (!parent)
+        return res.status(404).json({ message: "Parent comment not found" });
+    }
 
     const comment = await Comment.create({
       post: postId,
@@ -195,7 +202,14 @@ export const addComment = async (req, res) => {
       $inc: { commentsCount: 1 },
     });
 
-    res.status(201).json({ success: true, comment });
+    const populatedComment = await Comment.findById(comment._id)
+      .populate("author", "username profilePicture")
+      .lean();
+
+    res.status(201).json({
+      success: true,
+      comment: populatedComment,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

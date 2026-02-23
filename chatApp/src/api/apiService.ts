@@ -123,6 +123,52 @@ class ApiService {
       return error;
     }
   };
+
+  addComment = async (payload: any) => {
+    try {
+      const res = await ApiClient(
+        `/content/posts/${payload?.postId}/comments`,
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        },
+      );
+      console.log(res, 'res from addComment');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from addComment');
+      return error;
+    }
+  };
+
+  getPostComment = async (payload: any) => {
+    try {
+      const res = await ApiClient(
+        `/content/posts/${payload?.postId}/comments`,
+        {
+          method: 'GET',
+        },
+      );
+      console.log(res, 'res from getPostComment');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getPostComment');
+      return error;
+    }
+  };
+
+  deleteComment = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/content/comments/${payload?.commentId}`, {
+        method: 'DELETE',
+      });
+      console.log(res, 'res from deleteComment');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from deleteComment');
+      return error;
+    }
+  };
 }
 
 const apiService = new ApiService();

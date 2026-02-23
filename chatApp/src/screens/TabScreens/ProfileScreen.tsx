@@ -20,6 +20,7 @@ import { typography } from '../../theme';
 import { useAppDispatch } from '../../redux/hooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logoutUser } from '../../redux/slice/authSlice';
+import { SheetManager } from 'react-native-actions-sheet';
 
 const tabs = ['Posts', 'Saved', 'Tagged'];
 
@@ -72,10 +73,13 @@ const ProfileScreen = () => {
   return (
     <Layout paddingTop={insets.top}>
       <AppHeader
+        showBackButton={false}
         isLogo={false}
         title={'@' + profileData?.username}
         rightIcon1={<Icon name="exit" size={24} color="#7b8cff" />}
-        onPressRightIcon1={handleLogout}
+        onPressRightIcon1={() => {
+          SheetManager.show('LogoutSheet');
+        }}
       />
 
       <View style={styles.avatarWrapper}>
