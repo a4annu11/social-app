@@ -19,6 +19,9 @@ app.use("/auth", authRoute);
 app.use("/user/profile", userRoute);
 app.use("/content", postRoute);
 app.use("/story", storyRoute);
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
 
 app.listen(PORT, "0.0.0.0", () => {
   connectDB();

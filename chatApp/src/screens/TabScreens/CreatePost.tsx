@@ -3,9 +3,9 @@ import {
   StyleSheet,
   Text,
   View,
-  TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import Layout from '../Layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,16 +16,27 @@ import { uploadToCloudinary } from '../../utils/cloudinaryUpload';
 import { showError, showSuccess, showWarning } from '../../utils/ToastMessage';
 import DeckCarousel from '../../components/DeckCard';
 
+import { useForm, FormProvider } from 'react-hook-form';
+import { TextField } from '../../components/UI/Input';
+import { GradientButton, OutLineButton } from '../../components/UI/Button';
+import AppHeader from '../../components/AppHeader';
+import Icon from 'react-native-vector-icons/Ionicons';
+
 const CreatePostScreen = () => {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors }: any = useTheme();
   const navigation = useNavigation();
 
   const [selectedMedia, setSelectedMedia] = useState<any[]>([]);
-  const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // ── Pick Media ────────────────────────────────────────────────────
+  const methods = useForm({
+    defaultValues: {
+      caption: '',
+    },
+  });
+
+  // ── Pick Media ──────
   const handlePickMedia = async () => {
     const result: any = await launchImageLibrary({
       mediaType: 'mixed',
@@ -39,14 +50,16 @@ const CreatePostScreen = () => {
     }
   };
 
-  // ── Remove by index (X button only) ──────────────────────────────
+  // ── Remove Media ─────────────
   const handleRemove = (index: number) => {
     setSelectedMedia(prev => prev.filter((_, i) => i !== index));
   };
 
-  // ── Create Post ───────────────────────────────────────────────────
+  // ── Create Post ──────────────
   const handleCreatePost = async () => {
-    if (!caption.trim() && selectedMedia.length === 0) {
+    const { caption } = methods.getValues();
+
+    if (!caption?.trim() && selectedMedia.length === 0) {
       showWarning('Please add a caption or select media');
       return;
     }
@@ -55,6 +68,7 @@ const CreatePostScreen = () => {
       setLoading(true);
 
       let uploadedMedia: any[] = [];
+
       if (selectedMedia.length > 0) {
         uploadedMedia = await Promise.all(
           selectedMedia.map(file => uploadToCloudinary(file)),
@@ -62,7 +76,7 @@ const CreatePostScreen = () => {
       }
 
       const payload = {
-        caption: caption.trim(),
+        caption: caption?.trim(),
         ...(uploadedMedia.length > 0 && { media: uploadedMedia }),
       };
 
@@ -70,11 +84,15 @@ const CreatePostScreen = () => {
 
       if (res?.success) {
         showSuccess('Post created successfully');
+
+        methods.reset();
+        setSelectedMedia([]);
+
         navigation.goBack();
       } else {
         showError('Failed to create post');
       }
-    } catch {
+    } catch (error) {
       showError('Upload failed');
     } finally {
       setLoading(false);
@@ -83,43 +101,50 @@ const CreatePostScreen = () => {
 
   return (
     <Layout paddingTop={insets.top}>
-      <View style={styles.container}>
-        {/* Pick Button */}
-        <TouchableOpacity style={styles.pickButton} onPress={handlePickMedia}>
-          <Text style={styles.pickButtonText}>Pick Media</Text>
-        </TouchableOpacity>
+      <AppHeader
+        isLogo={true}
+        rightIcon1={
+          <Icon
+            name="add-circle-sharp"
+            size={28}
+            color={colors.Text_Primary_Color}
+          />
+        }
+        onPressRightIcon1={handlePickMedia}
+      />
 
-        {/* Carousel */}
-        {selectedMedia.length > 0 && (
-          <DeckCarousel media={selectedMedia} onRemove={handleRemove} />
-        )}
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        <FormProvider {...methods}>
+          <View style={styles.container}>
+            {/* Media Carousel */}
+            {selectedMedia.length > 0 && (
+              <DeckCarousel media={selectedMedia} onRemove={handleRemove} />
+            )}
 
-        {/* Caption */}
-        <TextInput
-          placeholder="Write a caption..."
-          placeholderTextColor="#888"
-          value={caption}
-          onChangeText={setCaption}
-          multiline
-          style={[styles.captionInput, { color: colors.text }]}
-        />
-
-        {/* Share Button */}
-        <TouchableOpacity
-          style={[
-            styles.button,
-            { backgroundColor: loading ? '#999' : '#6C63FF', marginBottom: 70 },
-          ]}
-          disabled={loading}
-          onPress={handleCreatePost}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Share</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+            {/* Caption Field */}
+            <View style={{ marginBottom: 30 }}>
+              <TextField
+                name="caption"
+                placeholder="Write a caption..."
+                multiline
+                numberOfLines={4}
+                maxLength={300}
+                showCharCount
+                height={110}
+                backgroundColor="#1c1c1e"
+              />
+            </View>
+            <View style={{ marginTop: 'auto', paddingBottom: 70 }}>
+              <GradientButton
+                title="Share To Lumora"
+                onPress={handleCreatePost}
+                disabled={loading}
+                loading={loading}
+              />
+            </View>
+          </View>
+        </FormProvider>
+      </ScrollView>
     </Layout>
   );
 };
@@ -141,14 +166,6 @@ const styles = StyleSheet.create({
   pickButtonText: {
     color: '#fff',
     fontWeight: '600',
-  },
-  captionInput: {
-    minHeight: 110,
-    borderRadius: 18,
-    padding: 16,
-    backgroundColor: '#1c1c1e',
-    marginBottom: 20,
-    textAlignVertical: 'top',
   },
   button: {
     paddingVertical: 16,
