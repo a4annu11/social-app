@@ -6,6 +6,7 @@ import {
   Image,
   FlatList,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -105,7 +106,13 @@ const Story = ({ stories }: any) => {
 
             {item.isOwn && (
               <View style={styles.plusIcon}>
-                <Icon name="add" size={14} color="#fff" />
+                <Pressable
+                  onPress={() => {
+                    navigation.navigate('CreateStory');
+                  }}
+                >
+                  <Icon name="add" size={14} color="#fff" />
+                </Pressable>
               </View>
             )}
           </View>

@@ -195,6 +195,19 @@ class ApiService {
     }
   };
 
+  deletePost = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/content/posts/${payload?.postId}`, {
+        method: 'DELETE',
+      });
+      console.log(res, 'res from deletePost');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from deletePost');
+      return error;
+    }
+  };
+
   //STORY
   createStory = async (payload: any) => {
     try {

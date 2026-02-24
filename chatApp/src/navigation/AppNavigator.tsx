@@ -6,6 +6,7 @@ import CreateGroupScreen from '../screens/TabScreens/CreateGroupScreen';
 import { colors } from '../utils/styles';
 import ProfileScreen from '../screens/AppScreen/AppProfileScreen';
 import StoryViewer from '../screens/AppScreen/StoryViewer';
+import CreateStoryScreen from '../screens/AppScreen/CreateStoryScreen';
 
 const Stack = createStackNavigator();
 
@@ -40,6 +41,15 @@ const AppNavigator = () => {
       <Stack.Screen
         name="StoryViewer"
         component={StoryViewer}
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+          cardStyle: { backgroundColor: 'black' },
+        }}
+      />
+      <Stack.Screen
+        name="CreateStory"
+        component={CreateStoryScreen}
         options={{
           presentation: 'modal',
           headerShown: false,

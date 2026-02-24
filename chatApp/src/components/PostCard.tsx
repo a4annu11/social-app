@@ -119,7 +119,18 @@ const PostCard = ({ post }: any) => {
           </View>
         </View>
 
-        <Icon name="ellipsis-horizontal" size={20} color="#aaa" />
+        <Icon
+          name="ellipsis-horizontal"
+          size={20}
+          color="#aaa"
+          onPress={() => {
+            if (post?.author?._id === currentUser?._id) {
+              SheetManager.show('DeletePostSheet', {
+                payload: { postId: post?._id },
+              });
+            }
+          }}
+        />
       </View>
 
       {/* IMAGE SLIDER */}

@@ -7,6 +7,7 @@ import { useNavigation, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
+  DeviceEventEmitter,
   FlatList,
   Image,
   Platform,
@@ -501,6 +502,64 @@ export const CommentSheet = (props: any) => {
           <Icon name="send" size={22} color="#7b8cff" />
         </TouchableOpacity>
       </View>
+    </ActionSheet>
+  );
+};
+
+export const DeletePostSheet = ({ payload }: any) => {
+  const { colors }: any = useTheme();
+  const inset = useSafeAreaInsets();
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async () => {
+    try {
+      setLoading(true);
+
+      const res = await apiService.deletePost({
+        postId: payload?.postId,
+      });
+
+      if (res?.success) {
+        SheetManager.hide('DeletePostSheet');
+
+        DeviceEventEmitter.emit('REFRESH_HOME_FEED', payload?.postId);
+      }
+    } catch (error) {
+      console.log('Delete error', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ActionSheet
+      id="DeletePostSheet"
+      gestureEnabled
+      containerStyle={{
+        backgroundColor: colors.Sheet_BG_Color,
+        padding: 16,
+        paddingBottom: Platform.OS === 'ios' ? 0 : inset.bottom + 10,
+        borderTopRightRadius: 28,
+        borderTopLeftRadius: 28,
+      }}
+    >
+      <TouchableOpacity onPress={handleDelete} disabled={loading}>
+        <Text style={{ color: 'red', fontSize: 16, paddingVertical: 14 }}>
+          {loading ? 'Deleting...' : 'Delete Post'}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => SheetManager.hide('DeletePostSheet')}>
+        <Text
+          style={{
+            ...typography.Montserrat_Regular14,
+            color: colors.Text_Primary_Color,
+            paddingVertical: 14,
+          }}
+        >
+          Cancel
+        </Text>
+      </TouchableOpacity>
     </ActionSheet>
   );
 };
