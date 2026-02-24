@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  DeviceEventEmitter,
 } from 'react-native';
 import Layout from '../Layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -83,11 +84,11 @@ const CreatePostScreen = () => {
       const res = await apiService.createPost(payload);
 
       if (res?.success) {
+        DeviceEventEmitter.emit('REFRESH_HOME_FEED');
         showSuccess('Post created successfully');
 
         methods.reset();
         setSelectedMedia([]);
-
         navigation.goBack();
       } else {
         showError('Failed to create post');
@@ -131,7 +132,7 @@ const CreatePostScreen = () => {
                 maxLength={300}
                 showCharCount
                 height={110}
-                backgroundColor="#1c1c1e"
+                // backgroundColor="#1c1c1e"
               />
             </View>
             <View style={{ marginTop: 'auto', paddingBottom: 70 }}>

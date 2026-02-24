@@ -18,7 +18,21 @@ const Story = ({ stories }: any) => {
 
   //  Transform backend response
   const formattedStories = useMemo(() => {
-    if (!stories) return [];
+    // If no stories from backend
+    if (!stories || stories.length === 0) {
+      return [
+        {
+          id: 'own-empty',
+          userId: currentUser?._id,
+          avatar: currentUser?.profilePicture,
+          username: currentUser?.username,
+          isOwn: true,
+          hasUnseen: false,
+          isEmpty: true,
+          stories: [],
+        },
+      ];
+    }
 
     const mapped = stories.map((item: any) => ({
       id: item._id,
@@ -30,11 +44,28 @@ const Story = ({ stories }: any) => {
       stories: item.stories,
     }));
 
-    // Move own story to first
+    // Check if own story exists in backend response
     const own = mapped.find((s: any) => s.isOwn);
-    const others = mapped.filter((s: any) => !s.isOwn);
 
-    return own ? [own, ...others] : mapped;
+    // If backend doesn't include own story, add it manually
+    if (!own) {
+      mapped.unshift({
+        id: 'own-empty',
+        userId: currentUser?._id,
+        avatar: currentUser?.profilePicture,
+        username: currentUser?.username,
+        isOwn: true,
+        hasUnseen: false,
+        stories: [],
+      });
+    }
+
+    // Move own story to first
+    const sorted = mapped.sort((a: any, b: any) =>
+      a.isOwn ? -1 : b.isOwn ? 1 : 0,
+    );
+
+    return sorted;
   }, [stories, currentUser]);
 
   const renderItem = ({ item }: any) => {

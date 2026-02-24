@@ -4,8 +4,10 @@ import {
   StyleSheet,
   Text,
   View,
+  RefreshControl,
+  DeviceEventEmitter,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '../Layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
@@ -15,25 +17,24 @@ import Story from '../../components/Story';
 import { useAppSelector } from '../../redux/hooks';
 import apiService from '../../api/apiService';
 import { useTheme } from '@react-navigation/native';
+import ShareQuote from '../../components/ShareQuote';
 
 const HomeScreen = () => {
   const insets = useSafeAreaInsets();
   const { colors }: any = useTheme();
   const { currentUser } = useAppSelector((state: any) => state.auth);
-  console.log('HOME CURRENT USER', currentUser);
+
   const [feedData, setFeedData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [storyData, setStoryData] = useState([]);
 
   const fetchFeed = async () => {
-    setLoading(true);
     try {
       const res = await apiService.getFeed();
-      setFeedData(res?.posts);
+      setFeedData(res?.posts || []);
     } catch (error) {
       console.log('Error in GET FEED', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -46,9 +47,32 @@ const HomeScreen = () => {
     }
   };
 
+  const initialLoad = async () => {
+    setLoading(true);
+    await Promise.all([fetchFeed(), fetchStories()]);
+    setLoading(false);
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchFeed(), fetchStories()]);
+    setRefreshing(false);
+  }, []);
+
   useEffect(() => {
-    fetchStories();
-    fetchFeed();
+    initialLoad();
+
+    const refreshListener = DeviceEventEmitter.addListener(
+      'REFRESH_HOME_FEED',
+      () => {
+        console.log('Refreshing from another screen...');
+        initialLoad();
+      },
+    );
+
+    return () => {
+      refreshListener.remove();
+    };
   }, []);
 
   return (
@@ -59,23 +83,35 @@ const HomeScreen = () => {
           <NotificationIcon name="bell" size={22} color={colors.Colored_Text} />
         }
       />
-      {/* <Story /> */}
 
       <FlatList
         data={feedData}
         renderItem={({ item }: any) => <PostCard post={item} />}
         keyExtractor={(item: any) => item._id}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={<Story stories={storyData} />}
+        ListHeaderComponent={() => {
+          return (
+            <>
+              <Story stories={storyData} />
+              <ShareQuote />
+            </>
+          );
+        }}
         contentContainerStyle={{
           backgroundColor: '#111a30',
           paddingBottom: 70,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#fff"
+          />
+        }
         ListFooterComponent={
           loading ? (
             <View
               style={{
-                flex: 1,
                 justifyContent: 'center',
                 alignItems: 'center',
                 marginTop: 10,

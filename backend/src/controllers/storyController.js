@@ -4,27 +4,47 @@ import Follow from "../models/Follow.js";
 import User from "../models/users.js";
 import cloudinary from "../config/cloudinary.js";
 
+// export const createStory = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { media } = req.body;
+
+//     if (!media) {
+//       return res.status(400).json({ message: "Media required" });
+//     }
+
+//     const uploadRes = await cloudinary.uploader.upload(media, {
+//       folder: "stories",
+//       resource_type: "auto",
+//     });
+
+//     const story = await Story.create({
+//       author: userId,
+//       media: {
+//         url: uploadRes.secure_url,
+//         public_id: uploadRes.public_id,
+//         type: uploadRes.resource_type,
+//       },
+//       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+//     });
+
+//     res.status(201).json({ success: true, story });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
 export const createStory = async (req, res) => {
   try {
     const userId = req.user.id;
     const { media } = req.body;
 
-    if (!media) {
+    if (!media?.url || !media?.public_id) {
       return res.status(400).json({ message: "Media required" });
     }
 
-    const uploadRes = await cloudinary.uploader.upload(media, {
-      folder: "stories",
-      resource_type: "auto",
-    });
-
     const story = await Story.create({
       author: userId,
-      media: {
-        url: uploadRes.secure_url,
-        public_id: uploadRes.public_id,
-        type: uploadRes.resource_type,
-      },
+      media,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
 
@@ -33,7 +53,6 @@ export const createStory = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 export const viewStory = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -100,7 +119,7 @@ export const deleteStory = async (req, res) => {
     }
 
     await cloudinary.uploader.destroy(story.media.public_id, {
-      resource_type: story.media.type,
+      resource_type: story.media.type === "video" ? "video" : "image",
     });
 
     await story.deleteOne();
@@ -140,9 +159,11 @@ export const getStoryFeed = async (req, res) => {
       // Only active stories
       {
         $match: {
-          author: { $in: followingIds },
+          author: {
+            $in: followingIds,
+            $nin: blockedIds,
+          },
           expiresAt: { $gt: new Date() },
-          author: { $nin: blockedIds },
         },
       },
 

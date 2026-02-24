@@ -20,6 +20,7 @@ import { useNavigation, useTheme } from '@react-navigation/native';
 import apiService from '../api/apiService';
 import { useAppSelector } from '../redux/hooks';
 import { SheetManager } from 'react-native-actions-sheet';
+import { typography } from '../theme';
 
 const { width } = Dimensions.get('window');
 
@@ -152,6 +153,21 @@ const PostCard = ({ post }: any) => {
         </View>
       )}
 
+      {post?.media?.length === 0 && (
+        <Text
+          style={[
+            styles.caption,
+            {
+              color: colors.Text_Secondary_Color,
+              ...typography.Montserrat_Bold14,
+              fontStyle: 'italic',
+            },
+          ]}
+        >
+          {post?.caption ?? ''}
+        </Text>
+      )}
+
       {/* ACTION ROW */}
       <View style={styles.actions}>
         <View style={{ flexDirection: 'row', gap: 16 }}>
@@ -191,12 +207,14 @@ const PostCard = ({ post }: any) => {
       </View>
 
       {/* CAPTION */}
-      <Text style={[styles.caption, { color: colors.Text_Secondary_Color }]}>
-        <Text style={[styles.username, { color: colors.Text_Primary_Color }]}>
-          {post?.author?.username}{' '}
+      {post?.media?.length > 0 && (
+        <Text style={[styles.caption, { color: colors.Text_Secondary_Color }]}>
+          <Text style={[styles.username, { color: colors.Text_Primary_Color }]}>
+            {post?.author?.username}{' '}
+          </Text>
+          {post?.caption ?? ''}
         </Text>
-        {post?.caption ?? ''}
-      </Text>
+      )}
 
       <Text
         style={styles.comments}
