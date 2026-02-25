@@ -21,6 +21,10 @@ const MyFollowRequest = () => {
 
   const [loading, setLoading] = useState(false);
   const [requests, setRequests] = useState<any[]>([]);
+  const [actionLoading, setActionLoading] = useState<{
+    userId: string;
+    type: 'accept' | 'reject';
+  } | null>(null);
 
   const fetchFollowRequests = async () => {
     setLoading(true);
@@ -40,6 +44,38 @@ const MyFollowRequest = () => {
   useEffect(() => {
     fetchFollowRequests();
   }, []);
+
+  const handleAccept = async (userId: string) => {
+    try {
+      setActionLoading({ userId, type: 'accept' });
+
+      const res = await apiService.acceptFollowRequest({ userId });
+
+      if (res?.success) {
+        setRequests(prev => prev.filter(item => item._id !== userId));
+      }
+    } catch (error) {
+      console.log('Accept error:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (userId: string) => {
+    try {
+      setActionLoading({ userId, type: 'reject' });
+
+      const res = await apiService.rejectFollowRequest({ userId });
+
+      if (res?.success) {
+        setRequests(prev => prev.filter(item => item._id !== userId));
+      }
+    } catch (error) {
+      console.log('Reject error:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const renderItem = ({ item }: any) => (
     <View
@@ -74,12 +110,30 @@ const MyFollowRequest = () => {
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.acceptBtn}>
-          <Text style={styles.acceptText}>Accept</Text>
+        <TouchableOpacity
+          style={styles.acceptBtn}
+          onPress={() => handleAccept(item._id)}
+          disabled={actionLoading?.userId === item._id}
+        >
+          {actionLoading?.userId === item._id &&
+          actionLoading?.type === 'accept' ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.acceptText}>Accept</Text>
+          )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.rejectBtn}>
-          <Text style={styles.rejectText}>Reject</Text>
+        <TouchableOpacity
+          style={styles.rejectBtn}
+          onPress={() => handleReject(item._id)}
+          disabled={actionLoading?.userId === item._id}
+        >
+          {actionLoading?.userId === item._id &&
+          actionLoading?.type === 'reject' ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.rejectText}>Reject</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -97,7 +151,9 @@ const MyFollowRequest = () => {
         />
       ) : requests.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={{ color: colors.text }}>No pending follow requests</Text>
+          <Text style={{ color: colors.Text_Secondary_Color }}>
+            No pending follow requests
+          </Text>
         </View>
       ) : (
         <FlatList

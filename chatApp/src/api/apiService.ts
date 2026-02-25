@@ -136,6 +136,38 @@ class ApiService {
     }
   };
 
+  cancelFollowRequest = async (payload: any) => {
+    try {
+      const res = await ApiClient(
+        `/user/profile/cancel-request/${payload?.userId}`,
+        {
+          method: 'DELETE',
+        },
+      );
+      console.log(res, 'res from cancelFollowRequest');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from cancelFollowRequest');
+      return error;
+    }
+  };
+
+  rejectFollowRequest = async (payload: any) => {
+    try {
+      const res = await ApiClient(
+        `/user/profile/reject-request/${payload?.userId}`,
+        {
+          method: 'DELETE',
+        },
+      );
+      console.log(res, 'res from rejectFollowRequest');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from rejectFollowRequest');
+      return error;
+    }
+  };
+
   getMyFollowRequests = async () => {
     try {
       const res = await ApiClient('/user/profile/my/follow-requests', {

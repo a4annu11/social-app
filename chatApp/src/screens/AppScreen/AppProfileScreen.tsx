@@ -36,6 +36,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
   const [loading, setLoading] = useState(false);
   const [postLoading, setPostLoading] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -81,10 +82,12 @@ const ProfileScreen = ({ navigation, route }: any) => {
   }, []);
 
   const handleFollowAction = async () => {
+    setActionLoading(true);
     try {
       const userId = profileData?._id;
       if (!userId) return;
 
+      // Already Following → Unfollow
       if (profileData?.isFollowing) {
         const res = await apiService.unFollowUser({ userId });
 
@@ -98,8 +101,9 @@ const ProfileScreen = ({ navigation, route }: any) => {
         return;
       }
 
+      //  Request Sent → Cancel Request
       if (profileData?.isRequested) {
-        const res = await apiService.unFollowUser({ userId });
+        const res = await apiService.cancelFollowRequest({ userId });
 
         if (res?.success) {
           setProfileData((prev: any) => ({
@@ -110,6 +114,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
         return;
       }
 
+      //  Not Following → Follow or Send Request
       const res = await apiService.followUser({ userId });
 
       if (res?.success) {
@@ -129,12 +134,14 @@ const ProfileScreen = ({ navigation, route }: any) => {
     } catch (error) {
       console.log('Follow error:', error);
       showError('Something went wrong');
+    } finally {
+      setActionLoading(false);
     }
   };
   const getFollowButtonTitle = () => {
     if (profileData?.isFollowing) return 'Unfollow';
-    if (profileData?.isRequested) return 'Requested';
-    if (profileData?.isPrivate) return 'Request';
+    if (profileData?.isRequested) return 'Cancel Request';
+    if (profileData?.isPrivate) return 'Send Request';
     return 'Follow';
   };
 
@@ -287,12 +294,17 @@ const ProfileScreen = ({ navigation, route }: any) => {
           }}
         >
           <View style={{ flex: 1 }}>
-            {profileData?.isFollowing ? (
-              <OutLineButton title="Unfollow" onPress={handleFollowAction} />
+            {profileData?.isFollowing || profileData?.isRequested ? (
+              <OutLineButton
+                title={profileData?.isFollowing ? 'Unfollow' : 'Cancel Request'}
+                onPress={handleFollowAction}
+                loading={actionLoading}
+              />
             ) : (
               <GradientButton
                 title={getFollowButtonTitle()}
                 onPress={handleFollowAction}
+                loading={actionLoading}
               />
             )}
           </View>
