@@ -138,7 +138,7 @@ class ApiService {
 
   getMyFollowRequests = async () => {
     try {
-      const res = await ApiClient('/user/profile/follow-requests', {
+      const res = await ApiClient('/user/profile/my/follow-requests', {
         method: 'GET',
       });
       console.log(res, 'res from getMyFollowRequests');

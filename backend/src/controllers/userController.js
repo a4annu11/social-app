@@ -338,6 +338,66 @@ export const unfollowUser = async (req, res) => {
   }
 };
 
+export const cancelFollowRequest = async (req, res) => {
+  try {
+    const myId = req.user.id;
+    const { userId } = req.params;
+
+    const follow = await Follow.findOne({
+      follower: myId,
+      following: userId,
+      status: "pending",
+    });
+
+    if (!follow) {
+      return res.status(404).json({
+        success: false,
+        message: "Pending request not found",
+      });
+    }
+
+    await follow.deleteOne();
+
+    res.json({
+      success: true,
+      message: "Follow request cancelled",
+      status: "not_following",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const rejectFollowRequest = async (req, res) => {
+  try {
+    const myId = req.user.id;
+    const { userId } = req.params;
+
+    const follow = await Follow.findOne({
+      follower: userId,
+      following: myId,
+      status: "pending",
+    });
+
+    if (!follow) {
+      return res.status(404).json({
+        success: false,
+        message: "Follow request not found",
+      });
+    }
+
+    await follow.deleteOne();
+
+    res.json({
+      success: true,
+      message: "Follow request rejected",
+      status: "rejected",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const blockUser = async (req, res) => {
   try {
     const myId = req.user.id;

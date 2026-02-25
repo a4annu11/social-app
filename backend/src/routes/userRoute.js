@@ -13,6 +13,8 @@ import {
   getFollowers,
   getFollowing,
   getMyFollowRequests,
+  cancelFollowRequest,
+  rejectFollowRequest,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -27,6 +29,8 @@ router.patch("/toggle-private", protect, togglePrivateAccount);
 router.post("/follow/:userId", protect, followUser);
 router.post("/accept/:userId", protect, acceptFollowRequest);
 router.post("/unfollow/:userId", protect, unfollowUser);
+router.delete("/cancel-request/:userId", protect, cancelFollowRequest);
+router.delete("/reject-request/:userId", protect, rejectFollowRequest);
 router.post("/block/:userId", protect, blockUser);
 router.get("/follow-status/:userId", protect, getFollowStatus);
 
