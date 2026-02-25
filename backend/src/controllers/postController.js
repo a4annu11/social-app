@@ -3,40 +3,6 @@ import cloudinary from "../config/cloudinary.js";
 import Comment from "../models/Comment.js";
 import Post from "../models/Post.js";
 
-// export const createPost = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const { caption, media } = req.body;
-
-//     // media = array of base64 strings or urls
-//     const uploadedMedia = [];
-
-//     if (media && media.length > 0) {
-//       for (let item of media) {
-//         const uploadRes = await cloudinary.uploader.upload(item, {
-//           folder: "posts",
-//           resource_type: "auto", // supports image + video
-//         });
-
-//         uploadedMedia.push({
-//           url: uploadRes.secure_url,
-//           public_id: uploadRes.public_id,
-//           type: uploadRes.resource_type,
-//         });
-//       }
-//     }
-
-//     const post = await Post.create({
-//       author: userId,
-//       caption,
-//       media: uploadedMedia,
-//     });
-
-//     res.status(201).json({ success: true, post });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// };
 export const createPost = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -53,58 +19,6 @@ export const createPost = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-// export const updatePost = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const { postId } = req.params;
-//     const { caption, media } = req.body;
-
-//     const post = await Post.findById(postId);
-//     if (!post) return res.status(404).json({ message: "Post not found" });
-
-//     if (post.author.toString() !== userId)
-//       return res.status(403).json({ message: "Unauthorized" });
-
-//     // Update caption
-//     if (caption !== undefined) {
-//       post.caption = caption;
-//     }
-
-//     // If media is provided, replace all media
-//     if (media && media.length > 0) {
-//       // 1️⃣ Delete old media safely using public_id
-//       for (let item of post.media) {
-//         await cloudinary.uploader.destroy(item.public_id, {
-//           resource_type: item.type,
-//         });
-//       }
-
-//       // 2️⃣ Upload new media
-//       const uploadedMedia = [];
-
-//       for (let item of media) {
-//         const uploadRes = await cloudinary.uploader.upload(item, {
-//           folder: "posts",
-//           resource_type: "auto",
-//         });
-
-//         uploadedMedia.push({
-//           url: uploadRes.secure_url,
-//           public_id: uploadRes.public_id, // IMPORTANT
-//           type: uploadRes.resource_type,
-//         });
-//       }
-
-//       post.media = uploadedMedia;
-//     }
-
-//     await post.save();
-
-//     res.json({ success: true, post });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// };
 
 export const updatePost = async (req, res) => {
   try {
@@ -150,33 +64,6 @@ export const updatePost = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-// export const deletePost = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const { postId } = req.params;
-
-//     const post = await Post.findById(postId);
-//     if (!post) return res.status(404).json({ message: "Post not found" });
-
-//     if (post.author.toString() !== userId)
-//       return res.status(403).json({ message: "Unauthorized" });
-
-//     // Delete media from Cloudinary safely
-//     for (let item of post.media) {
-//       await cloudinary.uploader.destroy(item.public_id, {
-//         resource_type: item.type,
-//       });
-//     }
-
-//     await Comment.deleteMany({ post: postId });
-//     await post.deleteOne();
-
-//     res.json({ success: true, message: "Post deleted successfully" });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-
 export const deletePost = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -409,10 +296,14 @@ export const getFeed = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const posts = await Post.aggregate([
+      // 1 Sort newest first
       { $sort: { createdAt: -1 } },
+
+      // 2 Pagination
       { $skip: skip },
       { $limit: limit },
 
+      // 3 Populate author
       {
         $lookup: {
           from: "users",
@@ -423,6 +314,7 @@ export const getFeed = async (req, res) => {
       },
       { $unwind: "$author" },
 
+      // 4 Calculate like info
       {
         $addFields: {
           likesCount: { $size: "$likes" },
@@ -430,13 +322,40 @@ export const getFeed = async (req, res) => {
         },
       },
 
+      // 5 Check if saved by current user
+      {
+        $lookup: {
+          from: "savedposts",
+          let: { postId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$post", "$$postId"] },
+                    { $eq: ["$user", userId] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "savedData",
+        },
+      },
+
+      {
+        $addFields: {
+          isSaved: { $gt: [{ $size: "$savedData" }, 0] },
+        },
+      },
+
+      // 6 Remove unnecessary fields
       {
         $project: {
-          // Remove unwanted post fields
           likes: 0,
+          savedData: 0,
           __v: 0,
 
-          // Remove unwanted author fields
           "author.password": 0,
           "author.email": 0,
           "author.blockedUsers": 0,
@@ -446,6 +365,7 @@ export const getFeed = async (req, res) => {
     ]);
 
     res.json({
+      success: true,
       page,
       limit,
       posts,
@@ -454,7 +374,6 @@ export const getFeed = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 export const getUserPosts = async (req, res) => {
   try {
     const currentUserId = new mongoose.Types.ObjectId(req.user.id);

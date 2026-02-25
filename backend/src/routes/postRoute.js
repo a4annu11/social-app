@@ -13,6 +13,10 @@ import {
   getUserPosts,
 } from "../controllers/postController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import {
+  getSavedPosts,
+  toggleSavePost,
+} from "../controllers/savedPostController.js";
 
 const router = express.Router();
 
@@ -35,5 +39,8 @@ router.put("/comments/:commentId/like", protect, toggleLikeComment);
 router.get("/feed", protect, getFeed);
 
 router.get("/posts/user/:userId", protect, getUserPosts);
+
+router.post("/save/:postId", protect, toggleSavePost);
+router.get("/saved", protect, getSavedPosts);
 
 export default router;
