@@ -296,7 +296,7 @@ export const getFeed = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const posts = await Post.aggregate([
-      // 1 Sort newest first
+      // 1 Sort newest
       { $sort: { createdAt: -1 } },
 
       // 2 Pagination
@@ -314,7 +314,46 @@ export const getFeed = async (req, res) => {
       },
       { $unwind: "$author" },
 
-      // 4 Calculate like info
+      // 4 Check follow relationship
+      {
+        $lookup: {
+          from: "follows",
+          let: { authorId: "$author._id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$follower", userId] },
+                    { $eq: ["$following", "$$authorId"] },
+                    { $eq: ["$status", "accepted"] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "followData",
+        },
+      },
+
+      {
+        $addFields: {
+          isFollowingAuthor: { $gt: [{ $size: "$followData" }, 0] },
+        },
+      },
+
+      // 5 Filter private accounts
+      {
+        $match: {
+          $or: [
+            { "author.isPrivate": false },
+            { isFollowingAuthor: true },
+            { "author._id": userId },
+          ],
+        },
+      },
+
+      // 6 Like data
       {
         $addFields: {
           likesCount: { $size: "$likes" },
@@ -322,7 +361,7 @@ export const getFeed = async (req, res) => {
         },
       },
 
-      // 5 Check if saved by current user
+      // 7 Saved check
       {
         $lookup: {
           from: "savedposts",
@@ -349,10 +388,11 @@ export const getFeed = async (req, res) => {
         },
       },
 
-      // 6 Remove unnecessary fields
+      // 8 Clean fields
       {
         $project: {
           likes: 0,
+          followData: 0,
           savedData: 0,
           __v: 0,
 

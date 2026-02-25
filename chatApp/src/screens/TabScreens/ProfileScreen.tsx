@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  FlatList,
+  ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Layout from '../Layout';
@@ -17,20 +19,25 @@ import { useTheme } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import { showError } from '../../utils/ToastMessage';
 import { typography } from '../../theme';
-import { useAppDispatch } from '../../redux/hooks';
+import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logoutUser } from '../../redux/slice/authSlice';
 import { SheetManager } from 'react-native-actions-sheet';
+import PostCard from '../../components/PostCard';
+import { setUserPosts } from '../../redux/slice/contentSlice';
 
 const tabs = ['Posts', 'Saved', 'Tagged'];
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('Posts');
   const { colors }: any = useTheme();
   const [profileData, setProfileData] = useState<any>({});
   const [loading, setLoading] = useState(false);
+  const [postLoading, setPostLoading] = useState(false);
   const dispatch = useAppDispatch();
+  const { currentUser } = useAppSelector(state => state.auth);
+  const { userPosts } = useAppSelector((state: any) => state.content);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -49,15 +56,29 @@ const ProfileScreen = () => {
     }
   };
 
+  const fetchUserPosts = async () => {
+    setPostLoading(true);
+    try {
+      const res = await apiService.getUserPosts({
+        userId: profileData?._id || currentUser?._id,
+      });
+
+      if (res?.success) {
+        dispatch(setUserPosts(res?.posts));
+      } else {
+        showError('Failed to fetch posts');
+      }
+    } catch (error) {
+      console.log('Error in GET USER POSTS', error);
+    } finally {
+      setPostLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
+    fetchUserPosts();
   }, []);
-
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('currentUser');
-    dispatch(logoutUser());
-  };
 
   if (loading)
     return (
@@ -76,146 +97,156 @@ const ProfileScreen = () => {
         showBackButton={false}
         isLogo={false}
         title={'@' + profileData?.username}
-        rightIcon1={<Icon name="exit" size={24} color="#7b8cff" />}
+        rightIcon1={<Icon name="menu" size={24} color="#7b8cff" />}
         onPressRightIcon1={() => {
-          SheetManager.show('LogoutSheet');
+          // SheetManager.show('LogoutSheet');
+          navigation.navigate('settings');
         }}
       />
 
-      <View style={styles.avatarWrapper}>
-        <Image
-          source={
-            profileData?.profilePicture
-              ? { uri: profileData?.profilePicture }
-              : require('../../../assets/images/default-user.png')
-          }
-          style={styles.avatar}
-        />
-        <View style={styles.plusIconWrapper}>
-          <Icon name="add" size={16} color="#fff" />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1, backgroundColor: '#111a30' }}
+        contentContainerStyle={{
+          paddingBottom: 70,
+        }}
+      >
+        <View style={styles.avatarWrapper}>
+          <Image
+            source={
+              profileData?.profilePicture
+                ? { uri: profileData?.profilePicture }
+                : require('../../../assets/images/default-user.png')
+            }
+            style={styles.avatar}
+          />
+          <View style={styles.plusIconWrapper}>
+            <Icon name="pencil" size={12} color="#fff" />
+          </View>
         </View>
-      </View>
 
-      <Text
-        style={{
-          ...typography.Montserrat_Bold20,
-          color: colors.Text_Primary_Color,
-          textAlign: 'center',
-        }}
-      >
-        {profileData?.name}
-      </Text>
-      <Text style={styles.role}>Director & CEO of Lumora</Text>
+        <Text
+          style={{
+            ...typography.Montserrat_Bold20,
+            color: colors.Text_Primary_Color,
+            textAlign: 'center',
+          }}
+        >
+          {profileData?.name}
+        </Text>
+        <Text style={styles.role}>Director & CEO of Lumora</Text>
 
-      <Text
-        style={{
-          ...typography.Montserrat_Regular14,
-          color: colors.Text_Secondary_Color,
-          textAlign: 'center',
-          marginTop: 4,
-        }}
-      >
-        {profileData?.bio ?? ''}
         <Text
           style={{
             ...typography.Montserrat_Regular14,
-            color: colors.Colored_Text,
+            color: colors.Text_Secondary_Color,
+            textAlign: 'center',
+            marginTop: 4,
           }}
         >
-          {' '}
-          linktr.ee/lumora
+          {profileData?.bio ?? ''}
+          <Text
+            style={{
+              ...typography.Montserrat_Regular14,
+              color: colors.Colored_Text,
+            }}
+          >
+            {' '}
+            linktr.ee/lumora
+          </Text>
         </Text>
-      </Text>
 
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {profileData?.followersCount ?? 0}
-          </Text>
-          <Text
-            style={{
-              ...typography.Montserrat_SemiBold12,
-              color: colors.Colored_Text,
-            }}
-          >
-            FOLLOWERS
-          </Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {profileData?.followingCount ?? 0}
-          </Text>
-          <Text
-            style={{
-              ...typography.Montserrat_SemiBold12,
-              color: colors.Colored_Text,
-            }}
-          >
-            FOLLOWING
-          </Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>1.2M</Text>
-          <Text
-            style={{
-              ...typography.Montserrat_SemiBold12,
-              color: colors.Colored_Text,
-            }}
-          >
-            LIKES
-          </Text>
-        </View>
-      </View>
-
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          marginHorizontal: 16,
-          marginTop: 16,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <GradientButton title="Edit Profile" onPress={() => {}} />
-        </View>
-
-        <View
-          style={{
-            backgroundColor: colors.Linear_Gradient_1,
-            width: 48,
-            height: 48,
-            borderRadius: 50,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Icon name="share-social-outline" size={24} color="#fff" />
-        </View>
-      </View>
-
-      {/* Tabs Row */}
-      <View style={styles.tabsRow}>
-        {tabs.map(tab => (
-          <TouchableOpacity
-            key={tab}
-            style={styles.tabItem}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === tab && styles.activeTabText,
-              ]}
-            >
-              {tab}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {profileData?.followersCount ?? 0}
             </Text>
-            {activeTab === tab && <View style={styles.activeIndicator} />}
-          </TouchableOpacity>
-        ))}
-      </View>
+            <Text
+              style={{
+                ...typography.Montserrat_SemiBold12,
+                color: colors.Colored_Text,
+              }}
+            >
+              FOLLOWERS
+            </Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {profileData?.followingCount ?? 0}
+            </Text>
+            <Text
+              style={{
+                ...typography.Montserrat_SemiBold12,
+                color: colors.Colored_Text,
+              }}
+            >
+              FOLLOWING
+            </Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{userPosts?.length ?? 0}</Text>
+            <Text
+              style={{
+                ...typography.Montserrat_SemiBold12,
+                color: colors.Colored_Text,
+              }}
+            >
+              Posts
+            </Text>
+          </View>
+        </View>
 
-      {/* TODO: Render tab content based on activeTab */}
+        {/* Tabs Row */}
+        <View style={styles.tabsRow}>
+          {tabs.map(tab => (
+            <TouchableOpacity
+              key={tab}
+              style={styles.tabItem}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === tab && styles.activeTabText,
+                ]}
+              >
+                {tab}
+              </Text>
+              {activeTab === tab && <View style={styles.activeIndicator} />}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* TODO: Render tab content based on activeTab */}
+        <View style={{ flex: 1 }}>
+          {activeTab === 'Posts' && (
+            <View style={{ flex: 1 }}>
+              {postLoading ? (
+                <ActivityIndicator
+                  size="large"
+                  color="#0000ff"
+                  style={{ margin: 20 }}
+                />
+              ) : (
+                <FlatList
+                  data={userPosts}
+                  scrollEnabled={false}
+                  keyExtractor={(item: any) => item._id}
+                  renderItem={({ item }: any) => <PostCard post={item} />}
+                  showsVerticalScrollIndicator={false}
+                  // ListFooterComponent={() => (
+                  //   <ActivityIndicator
+                  //     size="large"
+                  //     color="#0000ff"
+                  //     style={{ margin: 20 }}
+                  //   />
+                  // )}
+                />
+              )}
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </Layout>
   );
 };

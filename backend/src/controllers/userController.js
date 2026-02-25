@@ -461,7 +461,7 @@ export const getMyFollowRequests = async (req, res) => {
 
     const result = requests.map((r) => r.follower);
 
-    res.json(result);
+    res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

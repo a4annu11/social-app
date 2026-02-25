@@ -44,6 +44,18 @@ class ApiService {
       return error;
     }
   };
+  togglePrivateAccount = async () => {
+    try {
+      const res = await ApiClient('/user/profile/toggle-private', {
+        method: 'PATCH',
+      });
+      console.log(res, 'res from togglePrivateAccount');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from togglePrivateAccount');
+      return error;
+    }
+  };
 
   //HOME
   getFeed = async () => {
@@ -120,6 +132,51 @@ class ApiService {
       return res;
     } catch (error) {
       console.log(error, 'error from unFollowUser');
+      return error;
+    }
+  };
+
+  getMyFollowRequests = async () => {
+    try {
+      const res = await ApiClient('/user/profile/follow-requests', {
+        method: 'GET',
+      });
+      console.log(res, 'res from getMyFollowRequests');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getMyFollowRequests');
+      return error;
+    }
+  };
+
+  getUserFollowers = async (payload: any) => {
+    try {
+      const res = await ApiClient(
+        `/user/profile/${payload?.userId}/followers`,
+        {
+          method: 'GET',
+        },
+      );
+      console.log(res, 'res from getUserFollowers');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getUserFollowers');
+      return error;
+    }
+  };
+
+  getUserFollowing = async (payload: any) => {
+    try {
+      const res = await ApiClient(
+        `/user/profile/${payload?.userId}/following`,
+        {
+          method: 'GET',
+        },
+      );
+      console.log(res, 'res from getUserFollowing');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getUserFollowing');
       return error;
     }
   };
@@ -204,6 +261,45 @@ class ApiService {
       return res;
     } catch (error) {
       console.log(error, 'error from deletePost');
+      return error;
+    }
+  };
+
+  savePost = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/content/save/${payload?.postId}`, {
+        method: 'POST',
+      });
+      console.log(res, 'res from savePost');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from savePost');
+      return error;
+    }
+  };
+
+  getSavedPosts = async () => {
+    try {
+      const res = await ApiClient('/content/saved', {
+        method: 'GET',
+      });
+      console.log(res, 'res from getSavedPosts');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getSavedPosts');
+      return error;
+    }
+  };
+
+  getUserPosts = async (payload: any) => {
+    try {
+      const res = await ApiClient(`/content/posts/user/${payload?.userId}`, {
+        method: 'GET',
+      });
+      console.log(res, 'res from getUserPosts');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getUserPosts');
       return error;
     }
   };

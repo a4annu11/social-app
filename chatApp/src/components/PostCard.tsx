@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -18,9 +18,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import apiService from '../api/apiService';
-import { useAppSelector } from '../redux/hooks';
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { SheetManager } from 'react-native-actions-sheet';
 import { typography } from '../theme';
+import { showSuccess } from '../utils/ToastMessage';
+import {
+  updatePostById,
+  updateUserPostById,
+} from '../redux/slice/contentSlice';
 
 const { width } = Dimensions.get('window');
 
@@ -51,14 +56,16 @@ const Dot = ({ index, scrollX }: { index: number; scrollX: any }) => {
   return <Animated.View style={[styles.dot, animatedStyle]} />;
 };
 
-const PostCard = ({ post }: any) => {
-  console.log('POST: ', post);
+const PostCard = ({ post, posts, setPosts }: any) => {
+  // console.log('POST: ', post);
   const scrollX = useSharedValue(0);
   const { colors }: any = useTheme();
   const naviagtion: any = useNavigation();
   const [isLiked, setIsLiked] = useState(post?.isLiked ?? false);
+  const [isSaved, setIsSaved] = useState(post?.isSaved ?? false);
   const [likesCount, setLikesCount] = useState(post?.likesCount ?? 0);
   const { currentUser } = useAppSelector(state => state.auth);
+  const dispatch = useAppDispatch();
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: e => {
@@ -67,18 +74,110 @@ const PostCard = ({ post }: any) => {
   });
 
   const handleToggleLike = async () => {
-    setIsLiked(!isLiked);
-    setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
+    const updatedLikeStatus = !post?.isLiked;
+
+    dispatch(
+      updatePostById({
+        postId: post?._id,
+        updates: {
+          isLiked: updatedLikeStatus,
+          likesCount: updatedLikeStatus
+            ? (post?.likesCount || 0) + 1
+            : (post?.likesCount || 0) - 1,
+        },
+      }),
+    );
+    dispatch(
+      updateUserPostById({
+        postId: post?._id,
+        updates: {
+          isLiked: updatedLikeStatus,
+          likesCount: updatedLikeStatus
+            ? (post?.likesCount || 0) + 1
+            : (post?.likesCount || 0) - 1,
+        },
+      }),
+    );
+
     try {
       const res = await apiService.toggleLikePost({
         postId: post?._id,
       });
 
       if (!res?.success) {
-        setIsLiked(!isLiked);
+        dispatch(
+          updatePostById({
+            postId: post?._id,
+            updates: {
+              isLiked: !updatedLikeStatus,
+              likesCount: post?.likesCount,
+            },
+          }),
+        );
+        dispatch(
+          updateUserPostById({
+            postId: post?._id,
+            updates: {
+              isLiked: !updatedLikeStatus,
+              likesCount: post?.likesCount,
+            },
+          }),
+        );
       }
     } catch (error) {
-      console.log('ERror in Toggle likepost', error);
+      console.log('Error in Toggle likepost', error);
+    }
+  };
+
+  const handleToggleSave = async () => {
+    const updatedSaveStatus = !post?.isSaved;
+
+    dispatch(
+      updatePostById({
+        postId: post?._id,
+        updates: { isSaved: updatedSaveStatus },
+      }),
+    );
+
+    dispatch(
+      updateUserPostById({
+        postId: post?._id,
+        updates: { isSaved: updatedSaveStatus },
+      }),
+    );
+
+    try {
+      const res = await apiService.savePost({
+        postId: post?._id,
+      });
+      if (res?.success) {
+        showSuccess(
+          res?.saved
+            ? 'Post saved to your collection'
+            : 'Post removed from collection',
+        );
+
+        if (post?.isSaved) {
+          setPosts(posts.filter((p: any) => p._id !== post?._id));
+        }
+      }
+
+      if (!res?.success) {
+        dispatch(
+          updatePostById({
+            postId: post?._id,
+            updates: { isSaved: !updatedSaveStatus },
+          }),
+        );
+        dispatch(
+          updateUserPostById({
+            postId: post?._id,
+            updates: { isSaved: !updatedSaveStatus },
+          }),
+        );
+      }
+    } catch (error) {
+      console.log('Error in Toggle save post', error);
     }
   };
 
@@ -95,6 +194,7 @@ const PostCard = ({ post }: any) => {
               }
               naviagtion.navigate('userProfile', {
                 username: post?.author?.username,
+                userId: post?.author?._id,
               });
             }}
           >
@@ -183,7 +283,7 @@ const PostCard = ({ post }: any) => {
       <View style={styles.actions}>
         <View style={{ flexDirection: 'row', gap: 16 }}>
           <TouchableOpacity onPress={handleToggleLike}>
-            {isLiked ? (
+            {post?.isLiked ? (
               <Icon name="heart" size={24} color="#7b8cff" />
             ) : (
               <Icon name="heart-outline" size={24} color="#7b8cff" />
@@ -205,15 +305,19 @@ const PostCard = ({ post }: any) => {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity>
-          <Icon name="bookmark-outline" size={22} color="#aaa" />
+        <TouchableOpacity onPress={handleToggleSave}>
+          {post?.isSaved ? (
+            <Icon name="bookmark" size={22} color="#7b8cff" />
+          ) : (
+            <Icon name="bookmark-outline" size={22} color="#aaa" />
+          )}
         </TouchableOpacity>
       </View>
 
       {/* STATS */}
       <View style={styles.stats}>
         <Text style={[styles.likes, { color: colors.Colored_Text }]}>
-          {likesCount ?? 0} likes
+          {post?.likesCount ?? 0} likes
         </Text>
       </View>
 

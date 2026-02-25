@@ -14,17 +14,20 @@ import AppHeader from '../../components/AppHeader';
 import NotificationIcon from 'react-native-vector-icons/Fontisto';
 import PostCard from '../../components/PostCard';
 import Story from '../../components/Story';
-import { useAppSelector } from '../../redux/hooks';
+import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 import apiService from '../../api/apiService';
 import { useTheme } from '@react-navigation/native';
 import ShareQuote from '../../components/ShareQuote';
+import { setFeedData } from '../../redux/slice/contentSlice';
+import RequestIcon from 'react-native-vector-icons/FontAwesome6';
 
-const HomeScreen = () => {
+const HomeScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
   const { colors }: any = useTheme();
   const { currentUser } = useAppSelector((state: any) => state.auth);
 
-  const [feedData, setFeedData] = useState([]);
+  const { feedData } = useAppSelector((state: any) => state.content);
+  const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [storyData, setStoryData] = useState([]);
@@ -32,7 +35,7 @@ const HomeScreen = () => {
   const fetchFeed = async () => {
     try {
       const res = await apiService.getFeed();
-      setFeedData(res?.posts || []);
+      dispatch(setFeedData(res?.posts || []));
     } catch (error) {
       console.log('Error in GET FEED', error);
     }
@@ -80,6 +83,16 @@ const HomeScreen = () => {
       <AppHeader
         isLogo={true}
         rightIcon1={
+          <RequestIcon
+            name="user-clock"
+            size={20}
+            color={colors.Colored_Text}
+          />
+        }
+        onPressRightIcon1={() => {
+          navigation.navigate('followRequest');
+        }}
+        rightIcon2={
           <NotificationIcon name="bell" size={22} color={colors.Colored_Text} />
         }
       />

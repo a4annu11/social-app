@@ -1,5 +1,5 @@
 import { useTheme } from '@react-navigation/native';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -7,9 +7,15 @@ import {
   View,
   Platform,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { typography } from '../../theme';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 export const GradientButton = ({
   title,
@@ -221,6 +227,65 @@ export const SocialButton = ({
         </Text>
       </View>
     </TouchableOpacity>
+  );
+};
+
+interface Props {
+  value: boolean;
+  onToggle: () => void;
+  activeColor?: string;
+  inactiveColor?: string;
+}
+
+export const CustomToggle: React.FC<Props> = ({
+  value,
+  onToggle,
+  activeColor = '#4CAF50',
+  inactiveColor = '#96999e',
+}) => {
+  const progress = useSharedValue(value ? 1 : 0);
+
+  useEffect(() => {
+    progress.value = withTiming(value ? 1 : 0, { duration: 200 });
+  }, [value]);
+
+  const animatedTrackStyle = useAnimatedStyle(() => {
+    return {
+      backgroundColor: progress.value === 1 ? activeColor : inactiveColor,
+    };
+  });
+
+  const animatedThumbStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateX: progress.value * 22,
+        },
+      ],
+    };
+  });
+  const styles = StyleSheet.create({
+    track: {
+      width: 50,
+      height: 28,
+      borderRadius: 20,
+      padding: 3,
+      justifyContent: 'center',
+    },
+    thumb: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: 'white',
+    },
+  });
+
+  return (
+    <Pressable onPress={onToggle}>
+      <Animated.View style={[styles.track, animatedTrackStyle]}>
+        <Animated.View style={[styles.thumb, animatedThumbStyle]} />
+      </Animated.View>
+    </Pressable>
   );
 };
 

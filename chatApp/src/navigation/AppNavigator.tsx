@@ -7,6 +7,9 @@ import { colors } from '../utils/styles';
 import ProfileScreen from '../screens/AppScreen/AppProfileScreen';
 import StoryViewer from '../screens/AppScreen/StoryViewer';
 import CreateStoryScreen from '../screens/AppScreen/CreateStoryScreen';
+import SettingScreen from '../screens/AppScreen/SettingScreen';
+import SavedPost from '../screens/AppScreen/Setting/SavedPost';
+import MyFollowRequest from '../screens/AppScreen/MyFollowRequest';
 
 const Stack = createStackNavigator();
 
@@ -36,6 +39,21 @@ const AppNavigator = () => {
       <Stack.Screen
         name="userProfile"
         component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="settings"
+        component={SettingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="savedPost"
+        component={SavedPost}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="followRequest"
+        component={MyFollowRequest}
         options={{ headerShown: false }}
       />
       <Stack.Screen

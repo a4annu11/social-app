@@ -46,7 +46,7 @@ const AppHeader = ({
         </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
         {rightIcon1 && (
           <TouchableOpacity onPress={onPressRightIcon1}>
             {rightIcon1}

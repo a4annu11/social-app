@@ -25,6 +25,11 @@ import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 import { logoutUser } from '../../redux/slice/authSlice';
 import apiService from '../../api/apiService';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {
+  removePostById,
+  updatePostById,
+  updateUserPostById,
+} from '../../redux/slice/contentSlice';
 
 export const LogoutSheet = ({ payload }: any) => {
   const navigation: any = useNavigation();
@@ -129,6 +134,13 @@ export const CommentSheet = (props: any) => {
   const [replyTo, setReplyTo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const post = useAppSelector((state: any) =>
+    state.content.feedData.find((p: any) => p._id === postId),
+  );
+  const userpost = useAppSelector((state: any) =>
+    state.content.userPosts.find((p: any) => p._id === postId),
+  );
 
   useEffect(() => {
     fetchComments();
@@ -165,7 +177,23 @@ export const CommentSheet = (props: any) => {
 
       setText('');
 
-      //replying to parent
+      dispatch(
+        updatePostById({
+          postId,
+          updates: {
+            commentsCount: (post?.commentsCount || 0) + 1,
+          },
+        }),
+      );
+      dispatch(
+        updateUserPostById({
+          postId,
+          updates: {
+            commentsCount: (userpost?.commentsCount || 0) + 1,
+          },
+        }),
+      );
+
       if (replyTo) {
         setComments(prev =>
           prev.map(comment =>
@@ -178,7 +206,6 @@ export const CommentSheet = (props: any) => {
           ),
         );
       } else {
-        // root comment
         setComments(prev => [newComment, ...prev]);
       }
 
@@ -188,8 +215,43 @@ export const CommentSheet = (props: any) => {
 
   //Delete Comment
   const handleDelete = async (commentId: string) => {
-    await apiService.deleteComment({ commentId });
-    // fetchComments();
+    const parentComment = comments.find(c => c._id === commentId);
+
+    let totalRemoved = 0;
+
+    if (parentComment) {
+      totalRemoved = 1 + (parentComment.replies?.length || 0);
+    } else {
+      totalRemoved = 1;
+    }
+
+    const res = await apiService.deleteComment({ commentId });
+
+    if (res?.success) {
+      dispatch(
+        updatePostById({
+          postId,
+          updates: {
+            commentsCount: Math.max(
+              (post?.commentsCount || 0) - totalRemoved,
+              0,
+            ),
+          },
+        }),
+      );
+
+      dispatch(
+        updateUserPostById({
+          postId,
+          updates: {
+            commentsCount: Math.max(
+              (userpost?.commentsCount || 0) - totalRemoved,
+              0,
+            ),
+          },
+        }),
+      );
+    }
   };
 
   const handleToggleLike = async (commentId: string) => {
@@ -510,6 +572,7 @@ export const DeletePostSheet = ({ payload }: any) => {
   const { colors }: any = useTheme();
   const inset = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
+  const dispatch = useAppDispatch();
 
   const handleDelete = async () => {
     try {
@@ -521,8 +584,8 @@ export const DeletePostSheet = ({ payload }: any) => {
 
       if (res?.success) {
         SheetManager.hide('DeletePostSheet');
-
-        DeviceEventEmitter.emit('REFRESH_HOME_FEED', payload?.postId);
+        dispatch(removePostById(payload?.postId));
+        // DeviceEventEmitter.emit('REFRESH_HOME_FEED', payload?.postId);
       }
     } catch (error) {
       console.log('Delete error', error);

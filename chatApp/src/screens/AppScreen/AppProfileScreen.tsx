@@ -7,8 +7,11 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  FlatList,
+  ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AccountLockIcon from 'react-native-vector-icons/FontAwesome6';
 import Layout from '../Layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
@@ -19,16 +22,20 @@ import { showError } from '../../utils/ToastMessage';
 import { typography } from '../../theme';
 import { getChatId, initializeChatDoc } from '../../services/firebase';
 import auth from '@react-native-firebase/auth';
+import PostCard from '../../components/PostCard';
 
 const tabs = ['Posts', 'Saved', 'Tagged'];
 
 const ProfileScreen = ({ navigation, route }: any) => {
   const username = route.params?.username;
+  const userId = route.params?.userId;
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('Posts');
   const { colors }: any = useTheme();
   const [profileData, setProfileData] = useState<any>({});
   const [loading, setLoading] = useState(false);
+  const [postLoading, setPostLoading] = useState(false);
+  const [posts, setPosts] = useState([]);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -49,8 +56,28 @@ const ProfileScreen = ({ navigation, route }: any) => {
     }
   };
 
+  const fetchUserPosts = async () => {
+    setPostLoading(true);
+    try {
+      const res = await apiService.getUserPosts({
+        userId: userId,
+      });
+
+      if (res?.success) {
+        setPosts(res?.posts);
+      } else {
+        showError('Failed to fetch posts');
+      }
+    } catch (error) {
+      console.log('Error in GET USER POSTS', error);
+    } finally {
+      setPostLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
+    fetchUserPosts();
   }, []);
 
   const handleFollowAction = async () => {
@@ -157,148 +184,225 @@ const ProfileScreen = ({ navigation, route }: any) => {
       <AppHeader
         isLogo={false}
         title={'@' + profileData?.username}
-        rightIcon1={<Icon name="menu" size={24} color="#7b8cff" />}
+        rightIcon1={
+          <Icon name="ellipsis-vertical-sharp" size={24} color="#7b8cff" />
+        }
       />
-
-      <View style={styles.avatarWrapper}>
-        <Image
-          source={
-            profileData?.profilePicture
-              ? { uri: profileData?.profilePicture }
-              : require('../../../assets/images/default-user.png')
-          }
-          style={styles.avatar}
-        />
-      </View>
-
-      <Text
-        style={{
-          ...typography.Montserrat_Bold20,
-          color: colors.Text_Primary_Color,
-          textAlign: 'center',
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1, backgroundColor: '#111a30' }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom,
         }}
       >
-        {profileData?.name}
-      </Text>
-      <Text style={styles.role}>Director & CEO of Lumora</Text>
+        <View style={styles.avatarWrapper}>
+          <Image
+            source={
+              profileData?.profilePicture
+                ? { uri: profileData?.profilePicture }
+                : require('../../../assets/images/default-user.png')
+            }
+            style={styles.avatar}
+          />
+        </View>
 
-      <Text
-        style={{
-          ...typography.Montserrat_Regular14,
-          color: colors.Text_Secondary_Color,
-          textAlign: 'center',
-          marginTop: 4,
-        }}
-      >
-        {profileData?.bio ?? ''}
+        <Text
+          style={{
+            ...typography.Montserrat_Bold20,
+            color: colors.Text_Primary_Color,
+            textAlign: 'center',
+          }}
+        >
+          {profileData?.name}
+        </Text>
+        <Text style={styles.role}>Director & CEO of Lumora</Text>
+
         <Text
           style={{
             ...typography.Montserrat_Regular14,
-            color: colors.Colored_Text,
+            color: colors.Text_Secondary_Color,
+            textAlign: 'center',
+            marginTop: 4,
           }}
         >
-          {' '}
-          linktr.ee/lumora
+          {profileData?.bio ?? ''}
+          <Text
+            style={{
+              ...typography.Montserrat_Regular14,
+              color: colors.Colored_Text,
+            }}
+          >
+            {' '}
+            linktr.ee/lumora
+          </Text>
         </Text>
-      </Text>
 
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {profileData?.followersCount ?? 0}
-          </Text>
-          <Text
-            style={{
-              ...typography.Montserrat_SemiBold12,
-              color: colors.Colored_Text,
-            }}
-          >
-            FOLLOWERS
-          </Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {profileData?.followersCount ?? 0}
+            </Text>
+            <Text
+              style={{
+                ...typography.Montserrat_SemiBold12,
+                color: colors.Colored_Text,
+              }}
+            >
+              FOLLOWERS
+            </Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {profileData?.followingCount ?? 0}
+            </Text>
+            <Text
+              style={{
+                ...typography.Montserrat_SemiBold12,
+                color: colors.Colored_Text,
+              }}
+            >
+              FOLLOWING
+            </Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{posts?.length ?? 0}</Text>
+            <Text
+              style={{
+                ...typography.Montserrat_SemiBold12,
+                color: colors.Colored_Text,
+              }}
+            >
+              Posts
+            </Text>
+          </View>
         </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {profileData?.followingCount ?? 0}
-          </Text>
-          <Text
-            style={{
-              ...typography.Montserrat_SemiBold12,
-              color: colors.Colored_Text,
-            }}
-          >
-            FOLLOWING
-          </Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>1.2M</Text>
-          <Text
-            style={{
-              ...typography.Montserrat_SemiBold12,
-              color: colors.Colored_Text,
-            }}
-          >
-            LIKES
-          </Text>
-        </View>
-      </View>
 
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          marginHorizontal: 16,
-          marginTop: 16,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          {profileData?.isFollowing ? (
-            <OutLineButton title="Unfollow" onPress={handleFollowAction} />
-          ) : (
-            <GradientButton
-              title={getFollowButtonTitle()}
-              onPress={handleFollowAction}
-            />
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            marginHorizontal: 16,
+            marginTop: 16,
+          }}
+        >
+          <View style={{ flex: 1 }}>
+            {profileData?.isFollowing ? (
+              <OutLineButton title="Unfollow" onPress={handleFollowAction} />
+            ) : (
+              <GradientButton
+                title={getFollowButtonTitle()}
+                onPress={handleFollowAction}
+              />
+            )}
+          </View>
+
+          {(profileData?.isFollowing || !profileData?.isPrivate) && (
+            <TouchableOpacity
+              onPress={handleStartChat}
+              style={{
+                backgroundColor: colors.Linear_Gradient_1,
+                width: 48,
+                height: 48,
+                borderRadius: 50,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Icon name="chatbubble-ellipses-outline" size={24} color="#fff" />
+            </TouchableOpacity>
           )}
         </View>
 
-        <TouchableOpacity
-          onPress={handleStartChat}
-          style={{
-            backgroundColor: colors.Linear_Gradient_1,
-            width: 48,
-            height: 48,
-            borderRadius: 50,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Icon name="chatbubble-ellipses-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+        {/* Tabs Row */}
 
-      {/* Tabs Row */}
-      <View style={styles.tabsRow}>
-        {tabs.map(tab => (
-          <TouchableOpacity
-            key={tab}
-            style={styles.tabItem}
-            onPress={() => setActiveTab(tab)}
+        {profileData?.isPrivate && !profileData?.isFollowing ? (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingVertical: 20,
+              paddingTop: 40,
+            }}
           >
+            <AccountLockIcon
+              name="user-lock"
+              size={58}
+              color={colors.Text_Secondary_Color}
+            />
             <Text
-              style={[
-                styles.tabText,
-                activeTab === tab && styles.activeTabText,
-              ]}
+              style={{
+                ...typography.Montserrat_Regular14,
+                color: colors.Text_Secondary_Color,
+                marginTop: 12,
+              }}
             >
-              {tab}
+              This account is private
             </Text>
-            {activeTab === tab && <View style={styles.activeIndicator} />}
-          </TouchableOpacity>
-        ))}
-      </View>
+            <Text
+              style={{
+                ...typography.Montserrat_Regular14,
+                color: colors.Text_Secondary_Color,
+              }}
+            >
+              Follow to see their posts
+            </Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.tabsRow}>
+              {tabs.map(tab => (
+                <TouchableOpacity
+                  key={tab}
+                  style={styles.tabItem}
+                  onPress={() => setActiveTab(tab)}
+                >
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === tab && styles.activeTabText,
+                    ]}
+                  >
+                    {tab}
+                  </Text>
+                  {activeTab === tab && <View style={styles.activeIndicator} />}
+                </TouchableOpacity>
+              ))}
+            </View>
 
-      {/* TODO: Render tab content based on activeTab */}
+            {/* TODO: Render tab content based on activeTab */}
+            <View style={{ flex: 1 }}>
+              {activeTab === 'Posts' && (
+                <View style={{ flex: 1 }}>
+                  {postLoading ? (
+                    <ActivityIndicator
+                      size="large"
+                      color="#0000ff"
+                      style={{ margin: 20 }}
+                    />
+                  ) : (
+                    <FlatList
+                      data={posts}
+                      scrollEnabled={false}
+                      keyExtractor={(item: any) => item._id}
+                      renderItem={({ item }: any) => <PostCard post={item} />}
+                      showsVerticalScrollIndicator={false}
+                      // ListFooterComponent={() => (
+                      //   <ActivityIndicator
+                      //     size="large"
+                      //     color="#0000ff"
+                      //     style={{ margin: 20 }}
+                      //   />
+                      // )}
+                    />
+                  )}
+                </View>
+              )}
+            </View>
+          </>
+        )}
+      </ScrollView>
     </Layout>
   );
 };
