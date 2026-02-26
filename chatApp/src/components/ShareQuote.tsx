@@ -145,15 +145,21 @@ const ShareQuote = () => {
                   onPress={handleCreatePost}
                   disabled={loading || !caption?.trim()}
                 >
-                  <Text
-                    style={{
-                      ...typography.Montserrat_SemiBold14,
-                      color: colors.Text_Primary_Color,
-                    }}
-                  >
-                    Share
-                  </Text>
-                  <Icon name="share" size={14} color="#fff" />
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Text
+                        style={{
+                          ...typography.Montserrat_SemiBold14,
+                          color: colors.Text_Primary_Color,
+                        }}
+                      >
+                        Share
+                      </Text>
+                      <Icon name="share" size={14} color="#fff" />
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>

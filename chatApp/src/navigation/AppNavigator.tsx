@@ -10,6 +10,8 @@ import CreateStoryScreen from '../screens/AppScreen/CreateStoryScreen';
 import SettingScreen from '../screens/AppScreen/SettingScreen';
 import SavedPost from '../screens/AppScreen/Setting/SavedPost';
 import MyFollowRequest from '../screens/AppScreen/MyFollowRequest';
+import FollowersList from '../screens/AppScreen/FollowersList';
+import FollowingList from '../screens/AppScreen/FollowingList';
 
 const Stack = createStackNavigator();
 
@@ -56,6 +58,17 @@ const AppNavigator = () => {
         component={MyFollowRequest}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="userFollowers"
+        component={FollowersList}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="userFollowing"
+        component={FollowingList}
+        options={{ headerShown: false }}
+      />
+
       <Stack.Screen
         name="StoryViewer"
         component={StoryViewer}

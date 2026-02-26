@@ -41,7 +41,7 @@ const CreateStoryScreen = () => {
 
   const pickMedia = async () => {
     const result: any = await launchImageLibrary({
-      mediaType: 'mixed',
+      mediaType: 'photo',
       quality: 0.8,
     });
 
@@ -120,9 +120,7 @@ const CreateStoryScreen = () => {
       </TouchableOpacity>
 
       {/* Media Preview */}
-      {isVideo ? //   source={{ uri: media.uri }} // <Video
-      //   style={styles.preview}
-      //   resizeMode="cover"
+      {isVideo ? //   resizeMode="cover" //   style={styles.preview} //   source={{ uri: media.uri }} // <Video
       //   repeat
       // />
       null : (

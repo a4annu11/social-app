@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   FlatList,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AccountLockIcon from 'react-native-vector-icons/FontAwesome6';
@@ -245,32 +246,50 @@ const ProfileScreen = ({ navigation, route }: any) => {
         </Text>
 
         <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {profileData?.followersCount ?? 0}
-            </Text>
-            <Text
-              style={{
-                ...typography.Montserrat_SemiBold12,
-                color: colors.Colored_Text,
-              }}
-            >
-              FOLLOWERS
-            </Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {profileData?.followingCount ?? 0}
-            </Text>
-            <Text
-              style={{
-                ...typography.Montserrat_SemiBold12,
-                color: colors.Colored_Text,
-              }}
-            >
-              FOLLOWING
-            </Text>
-          </View>
+          <Pressable
+            onPress={() => {
+              navigation.navigate('userFollowers', {
+                userId: userId,
+              });
+            }}
+            disabled={!profileData?.isFollowing && profileData?.isPrivate}
+          >
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {profileData?.followersCount ?? 0}
+              </Text>
+              <Text
+                style={{
+                  ...typography.Montserrat_SemiBold12,
+                  color: colors.Colored_Text,
+                }}
+              >
+                FOLLOWERS
+              </Text>
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              navigation.navigate('userFollowing', {
+                userId: userId,
+              });
+            }}
+            disabled={!profileData?.isFollowing && profileData?.isPrivate}
+          >
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {profileData?.followingCount ?? 0}
+              </Text>
+              <Text
+                style={{
+                  ...typography.Montserrat_SemiBold12,
+                  color: colors.Colored_Text,
+                }}
+              >
+                FOLLOWING
+              </Text>
+            </View>
+          </Pressable>
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>{posts?.length ?? 0}</Text>
             <Text

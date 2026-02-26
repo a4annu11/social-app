@@ -5,12 +5,12 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../utils/styles';
 
 import HomeScreen from '../screens/TabScreens/HomeScreen';
-import UsersScreen from '../screens/TabScreens/UsersScreen';
 import MessagesScreen from '../screens/TabScreens/MessagesScreen';
 import ProfileScreen from '../screens/TabScreens/ProfileScreen';
 import CreatePostScreen from '../screens/TabScreens/CreatePost';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
+import SearchScreen from '../screens/TabScreens/SearchScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -22,7 +22,7 @@ const TabNavigator = () => {
         tabBar={props => <CustomTabBar {...props} />}
       >
         <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Users" component={UsersScreen} />
+        <Tab.Screen name="Search" component={SearchScreen} />
         <Tab.Screen name="Messages" component={MessagesScreen} />
         <Tab.Screen name="CreatePost" component={CreatePostScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -53,7 +53,7 @@ function CustomTabBar({ state, navigation }: any) {
 
         <TabIcon
           icon="search"
-          route="Users"
+          route="Search"
           state={state}
           navigation={navigation}
           index={1}

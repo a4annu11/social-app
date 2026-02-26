@@ -183,36 +183,52 @@ class ApiService {
 
   getUserFollowers = async (payload: any) => {
     try {
+      const { userId, limit = 20, offset = 0 } = payload;
+
       const res = await ApiClient(
-        `/user/profile/${payload?.userId}/followers`,
-        {
-          method: 'GET',
-        },
+        `/user/profile/${userId}/followers?limit=${limit}&offset=${offset}`,
+        { method: 'GET' },
       );
-      console.log(res, 'res from getUserFollowers');
+
       return res;
     } catch (error) {
-      console.log(error, 'error from getUserFollowers');
       return error;
     }
   };
 
   getUserFollowing = async (payload: any) => {
     try {
+      const { userId, limit = 20, offset = 0 } = payload;
+
       const res = await ApiClient(
-        `/user/profile/${payload?.userId}/following`,
-        {
-          method: 'GET',
-        },
+        `/user/profile/${userId}/following?limit=${limit}&offset=${offset}`,
+        { method: 'GET' },
       );
-      console.log(res, 'res from getUserFollowing');
+
       return res;
     } catch (error) {
-      console.log(error, 'error from getUserFollowing');
       return error;
     }
   };
 
+  searchUsers = async (payload: any) => {
+    try {
+      const { query, limit = 20, offset = 0 } = payload;
+
+      const res = await ApiClient(
+        `/user/profile/my/search?q=${encodeURIComponent(
+          query,
+        )}&limit=${limit}&offset=${offset}`,
+        {
+          method: 'GET',
+        },
+      );
+
+      return res;
+    } catch (error) {
+      return error;
+    }
+  };
   addComment = async (payload: any) => {
     try {
       const res = await ApiClient(

@@ -1067,7 +1067,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3f3a8b48',
   },
   reactionButtonSelected: {
-    backgroundColor: '#eee',
+    backgroundColor: '#2661bb',
     borderRadius: 50,
   },
   dateSeparatorText: {
