@@ -527,6 +527,54 @@ export const getMyFollowRequests = async (req, res) => {
   }
 };
 
+export const searchUsers = async (req, res) => {
+  try {
+    const myId = req.user?.id;
+    const { q } = req.query;
+
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = parseInt(req.query.offset) || 0;
+
+    if (!q || q.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required",
+      });
+    }
+
+    const searchRegex = new RegExp(q, "i");
+
+    const currentUser = myId ? await User.findById(myId) : null;
+
+    const users = await User.find({
+      $and: [
+        {
+          $or: [
+            { username: { $regex: searchRegex } },
+            { name: { $regex: searchRegex } },
+          ],
+        },
+        myId ? { _id: { $ne: myId } } : {},
+        currentUser ? { _id: { $nin: currentUser.blockedUsers } } : {},
+      ],
+    })
+      .select("username name profilePicture isPrivate followersCount")
+      .skip(offset)
+      .limit(limit)
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      limit,
+      offset,
+      data: users,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // export const followUser = async (req, res) => {
 //   const session = await mongoose.startSession();
 //   session.startTransaction();

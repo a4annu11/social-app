@@ -15,6 +15,7 @@ import {
   getMyFollowRequests,
   cancelFollowRequest,
   rejectFollowRequest,
+  searchUsers,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -37,5 +38,6 @@ router.get("/follow-status/:userId", protect, getFollowStatus);
 router.get("/:userId/followers", protect, getFollowers);
 router.get("/:userId/following", protect, getFollowing);
 router.get("/my/follow-requests", protect, getMyFollowRequests);
+router.get("/my/search", protect, searchUsers);
 
 export default router;
