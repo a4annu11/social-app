@@ -13,6 +13,9 @@ import {
   getFollowers,
   getFollowing,
   getMyFollowRequests,
+  cancelFollowRequest,
+  rejectFollowRequest,
+  searchUsers,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -27,11 +30,14 @@ router.patch("/toggle-private", protect, togglePrivateAccount);
 router.post("/follow/:userId", protect, followUser);
 router.post("/accept/:userId", protect, acceptFollowRequest);
 router.post("/unfollow/:userId", protect, unfollowUser);
+router.delete("/cancel-request/:userId", protect, cancelFollowRequest);
+router.delete("/reject-request/:userId", protect, rejectFollowRequest);
 router.post("/block/:userId", protect, blockUser);
 router.get("/follow-status/:userId", protect, getFollowStatus);
 
 router.get("/:userId/followers", protect, getFollowers);
 router.get("/:userId/following", protect, getFollowing);
-router.get("/follow-requests", protect, getMyFollowRequests);
+router.get("/my/follow-requests", protect, getMyFollowRequests);
+router.get("/my/search", protect, searchUsers);
 
 export default router;

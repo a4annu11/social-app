@@ -1,312 +1,387 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Image,
-  Alert,
-  ScrollView,
+  TouchableOpacity,
+  Dimensions,
   ActivityIndicator,
+  FlatList,
+  ScrollView,
+  Pressable,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import {
-  usersRef,
-  currentUser,
-  serverTimestamp,
-  fetchUserChats,
-  fetchUserGroups,
-  signOut,
-} from '../../services/firebase';
-import { globalStyles, colors } from '../../utils/styles';
+import Icon from 'react-native-vector-icons/Ionicons';
 import Layout from '../Layout';
-import { formatLastSeen } from '../../utils/time';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AppHeader from '../../components/AppHeader';
+import { GradientButton } from '../../components/UI/Button';
+import { useTheme } from '@react-navigation/native';
+import apiService from '../../api/apiService';
+import { showError } from '../../utils/ToastMessage';
+import { typography } from '../../theme';
+import { useAppDispatch, useAppSelector } from '../../redux/hooks';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logoutUser } from '../../redux/slice/authSlice';
+import { SheetManager } from 'react-native-actions-sheet';
+import PostCard from '../../components/PostCard';
+import { setUserPosts } from '../../redux/slice/contentSlice';
 
-const ProfileScreen = () => {
-  const [user, setUser] = useState<any>({});
-  const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ chats: 0, groups: 0, friends: 0 });
-  const [completion, setCompletion] = useState(0);
-  const uid = currentUser()?.uid;
+const tabs = ['Posts', 'Saved', 'Tagged'];
 
-  useEffect(() => {
-    if (uid) {
-      const unsubscribe = usersRef()
-        .doc(uid)
-        .onSnapshot(doc => {
-          if (doc.exists) {
-            const userData = doc.data();
-            setUser(userData);
-            calculateCompletion(userData);
-            setLoading(false);
-          }
-        });
-      return unsubscribe;
+const ProfileScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
+  const [activeTab, setActiveTab] = useState('Posts');
+  const { colors }: any = useTheme();
+  const [profileData, setProfileData] = useState<any>({});
+  const [loading, setLoading] = useState(false);
+  const [postLoading, setPostLoading] = useState(false);
+  const dispatch = useAppDispatch();
+  const { currentUser } = useAppSelector(state => state.auth);
+  const { userPosts } = useAppSelector((state: any) => state.content);
+
+  const fetchProfile = async () => {
+    setLoading(true);
+    try {
+      const res = await apiService.getMyProfile();
+
+      if (res?.success) {
+        setProfileData(res?.user);
+      } else {
+        showError('Failed to fetch profile');
+      }
+    } catch (error) {
+      console.log('Error in GET PROFILE', error);
+    } finally {
+      setLoading(false);
     }
-  }, [uid]);
+  };
+
+  const fetchUserPosts = async () => {
+    setPostLoading(true);
+    try {
+      const res = await apiService.getUserPosts({
+        userId: profileData?._id || currentUser?._id,
+      });
+
+      if (res?.success) {
+        dispatch(setUserPosts(res?.posts));
+      } else {
+        showError('Failed to fetch posts');
+      }
+    } catch (error) {
+      console.log('Error in GET USER POSTS', error);
+    } finally {
+      setPostLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!uid) return;
-      const [chats, groups] = await Promise.all([
-        fetchUserChats(uid),
-        fetchUserGroups(uid),
-      ]);
-      setStats({
-        chats: chats.length,
-        groups: groups.length,
-        friends: Math.floor(chats.length * 1.5), // Example logic
-      });
-    };
-    fetchStats();
-  }, [uid]);
+    fetchProfile();
+    fetchUserPosts();
+  }, []);
 
-  const calculateCompletion = (userData: any) => {
-    let fields = ['name', 'bio', 'photoURL'];
-    let filled = fields.filter(f => !!userData[f]).length;
-    setCompletion(Math.round((filled / fields.length) * 100));
-  };
-
-  const saveProfile = async () => {
-    if (!user.name) return Alert.alert('Error', 'Name required');
-    await usersRef()
-      .doc(uid)
-      .update({
-        name: user.name,
-        bio: user.bio || '',
-        lastSeen: serverTimestamp(),
-      });
-    setEditing(false);
-    Alert.alert('Success', 'Profile updated!');
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-  };
-
-  if (loading) {
+  if (loading)
     return (
-      <View
-        style={[globalStyles.center, { backgroundColor: colors.background }]}
-      >
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <Layout>
+        <View
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      </Layout>
     );
-  }
 
   return (
-    <Layout statusBarColor={colors.primary}>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Profile Header */}
-        <LinearGradient
-          colors={[colors.primary, '#7b68ee']}
-          style={styles.profileHeader}
+    <Layout paddingTop={insets.top}>
+      <AppHeader
+        showBackButton={false}
+        isLogo={false}
+        title={'@' + profileData?.username}
+        rightIcon1={<Icon name="menu" size={24} color="#7b8cff" />}
+        onPressRightIcon1={() => {
+          // SheetManager.show('LogoutSheet');
+          navigation.navigate('settings');
+        }}
+      />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1, backgroundColor: '#111a30' }}
+        contentContainerStyle={{
+          paddingBottom: 70,
+        }}
+      >
+        <View style={styles.avatarWrapper}>
+          <Image
+            source={
+              profileData?.profilePicture
+                ? { uri: profileData?.profilePicture }
+                : require('../../../assets/images/default-user.png')
+            }
+            style={styles.avatar}
+          />
+          <View style={styles.plusIconWrapper}>
+            <Icon name="pencil" size={12} color="#fff" />
+          </View>
+        </View>
+
+        <Text
+          style={{
+            ...typography.Montserrat_Bold20,
+            color: colors.Text_Primary_Color,
+            textAlign: 'center',
+          }}
         >
-          <TouchableOpacity
-            disabled={!editing}
-            style={styles.avatarWrapper}
-            onPress={() => Alert.alert('Upload photo coming soon!')}
+          {profileData?.name}
+        </Text>
+        <Text style={styles.role}>Director & CEO of Lumora</Text>
+
+        <Text
+          style={{
+            ...typography.Montserrat_Regular14,
+            color: colors.Text_Secondary_Color,
+            textAlign: 'center',
+            marginTop: 4,
+          }}
+        >
+          {profileData?.bio ?? ''}
+          <Text
+            style={{
+              ...typography.Montserrat_Regular14,
+              color: colors.Colored_Text,
+            }}
           >
-            <Image
-              source={{
-                uri:
-                  user?.photoURL ||
-                  'https://cdn-icons-png.flaticon.com/512/147/147144.png',
+            {' '}
+            linktr.ee/lumora
+          </Text>
+        </Text>
+
+        <View style={styles.statsRow}>
+          <Pressable
+            onPress={() => {
+              navigation.navigate('userFollowers', {
+                userId: profileData?._id || currentUser?._id,
+              });
+            }}
+          >
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {profileData?.followersCount ?? 0}
+              </Text>
+              <Text
+                style={{
+                  ...typography.Montserrat_SemiBold12,
+                  color: colors.Colored_Text,
+                }}
+              >
+                FOLLOWERS
+              </Text>
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              navigation.navigate('userFollowing', {
+                userId: profileData?._id || currentUser?._id,
+              });
+            }}
+          >
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {profileData?.followingCount ?? 0}
+              </Text>
+              <Text
+                style={{
+                  ...typography.Montserrat_SemiBold12,
+                  color: colors.Colored_Text,
+                }}
+              >
+                FOLLOWING
+              </Text>
+            </View>
+          </Pressable>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{userPosts?.length ?? 0}</Text>
+            <Text
+              style={{
+                ...typography.Montserrat_SemiBold12,
+                color: colors.Colored_Text,
               }}
-              style={styles.avatar}
-            />
-            {editing && (
-              <View style={styles.editIcon}>
-                <Icon name="edit" size={18} color="#fff" />
-              </View>
-            )}
-          </TouchableOpacity>
-          <Text style={styles.name}>{user?.name || 'User'}</Text>
-          <Text style={styles.status}>
-            {user?.isOnline
-              ? '🟢 Online'
-              : `Last seen ${formatLastSeen(user?.lastSeen)}`}
-          </Text>
-        </LinearGradient>
-
-        {/* Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.chats}</Text>
-            <Text style={styles.statLabel}>Chats</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.groups}</Text>
-            <Text style={styles.statLabel}>Groups</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.friends}</Text>
-            <Text style={styles.statLabel}>Friends</Text>
-          </View>
-        </View>
-
-        {/* Profile Completion */}
-        <View style={styles.completionCard}>
-          <Text style={styles.completionText}>
-            Profile {completion}% complete
-          </Text>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${completion}%` }]} />
-          </View>
-        </View>
-
-        {/* Info Card */}
-        <View style={styles.infoCard}>
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={styles.input}
-            value={user?.name || ''}
-            editable={editing}
-            onChangeText={text => setUser({ ...user, name: text })}
-          />
-
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: '#eee' }]}
-            value={user?.email || ''}
-            editable={false}
-          />
-
-          <Text style={styles.label}>Bio</Text>
-          <TextInput
-            style={[styles.input, { height: 80 }]}
-            value={user?.bio || ''}
-            editable={editing}
-            onChangeText={text => setUser({ ...user, bio: text })}
-            multiline
-          />
-
-          <Text style={styles.label}>Joined</Text>
-          <Text style={styles.joinedText}>
-            {user?.createdAt
-              ? new Date(user.createdAt.seconds * 1000).toDateString()
-              : '—'}
-          </Text>
-        </View>
-
-        {/* Buttons */}
-        <View style={styles.btnRow}>
-          {editing ? (
-            <TouchableOpacity style={styles.saveBtn} onPress={saveProfile}>
-              <Text style={styles.btnText}>Save</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: colors.secondary }]}
-              onPress={() => setEditing(true)}
             >
-              <Text style={styles.btnText}>Edit</Text>
+              Posts
+            </Text>
+          </View>
+        </View>
+
+        {/* Tabs Row */}
+        <View style={styles.tabsRow}>
+          {tabs.map(tab => (
+            <TouchableOpacity
+              key={tab}
+              style={styles.tabItem}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === tab && styles.activeTabText,
+                ]}
+              >
+                {tab}
+              </Text>
+              {activeTab === tab && <View style={styles.activeIndicator} />}
             </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* TODO: Render tab content based on activeTab */}
+        <View style={{ flex: 1 }}>
+          {activeTab === 'Posts' && (
+            <View style={{ flex: 1 }}>
+              {postLoading ? (
+                <ActivityIndicator
+                  size="large"
+                  color="#0000ff"
+                  style={{ margin: 20 }}
+                />
+              ) : (
+                <FlatList
+                  data={userPosts}
+                  scrollEnabled={false}
+                  keyExtractor={(item: any) => item._id}
+                  renderItem={({ item }: any) => <PostCard post={item} />}
+                  showsVerticalScrollIndicator={false}
+                  // ListFooterComponent={() => (
+                  //   <ActivityIndicator
+                  //     size="large"
+                  //     color="#0000ff"
+                  //     style={{ margin: 20 }}
+                  //   />
+                  // )}
+                />
+              )}
+            </View>
           )}
-          <TouchableOpacity
-            style={[styles.saveBtn, { backgroundColor: colors.error }]}
-            onPress={handleLogout}
-          >
-            <Text style={styles.btnText}>Logout</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </Layout>
   );
 };
 
+export default ProfileScreen;
+
 const styles = StyleSheet.create({
-  container: { paddingBottom: 20 },
-  profileHeader: {
-    alignItems: 'center',
-    paddingVertical: 30,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    marginBottom: 20,
-  },
-  avatarWrapper: { position: 'relative' },
-  avatar: { width: 100, height: 100, borderRadius: 50 },
-  editIcon: {
-    position: 'absolute',
-    bottom: 0,
-    right: 5,
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    padding: 5,
-  },
-  name: { fontSize: 22, fontWeight: 'bold', color: '#fff', marginTop: 10 },
-  status: { fontSize: 14, color: '#eee' },
-
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  statCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    width: 100,
-    alignItems: 'center',
-    paddingVertical: 15,
-    elevation: 2,
-  },
-  statNumber: { fontSize: 20, fontWeight: 'bold', color: colors.primary },
-  statLabel: { fontSize: 13, color: colors.textSecondary },
-
-  completionCard: {
-    marginHorizontal: 20,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 15,
-    marginBottom: 20,
-    elevation: 2,
-  },
-  completionText: { color: colors.text, fontWeight: '600', marginBottom: 8 },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#eee',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 8,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-  },
-
-  infoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    elevation: 2,
-    marginHorizontal: 20,
-    marginBottom: 20,
-  },
-  label: { color: colors.textSecondary, marginBottom: 4 },
-  input: {
-    backgroundColor: '#f7f7f7',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 15,
-  },
-  joinedText: { color: colors.text },
-  btnRow: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginHorizontal: 20,
-  },
-  saveBtn: {
-    flex: 1,
-    backgroundColor: colors.primary,
-    marginHorizontal: 5,
-    borderRadius: 10,
-    alignItems: 'center',
+    paddingHorizontal: 14,
     paddingVertical: 12,
+    alignItems: 'center',
   },
-  btnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-});
 
-export default ProfileScreen;
+  avatarWrapper: {
+    alignSelf: 'center',
+    marginTop: 14,
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: '#7b8cff',
+  },
+  plusIconWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#7b8cff',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#111a30',
+  },
+
+  role: {
+    color: '#7b8cff',
+    fontWeight: '600',
+    fontSize: 14,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  bio: {
+    color: '#bbb',
+    fontSize: 13,
+    marginHorizontal: 28,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  link: {
+    color: '#7b8cff',
+    fontWeight: '600',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginTop: 18,
+    paddingHorizontal: 20,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  statLabel: {
+    color: '#7b8cff',
+    fontWeight: '600',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  editProfileBtn: {
+    backgroundColor: '#7b8cff',
+    marginHorizontal: 50,
+    marginTop: 18,
+    borderRadius: 24,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  editProfileText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+
+  tabsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#555',
+  },
+  tabItem: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  tabText: {
+    color: '#aaa',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  activeTabText: {
+    color: '#7b8cff',
+  },
+  activeIndicator: {
+    marginTop: 6,
+    height: 2,
+    width: 24,
+    backgroundColor: '#7b8cff',
+    borderRadius: 1,
+  },
+});

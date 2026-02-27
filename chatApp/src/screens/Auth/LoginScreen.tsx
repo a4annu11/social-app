@@ -1,182 +1,224 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  Button,
-  Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
-import { globalStyles, colors } from '../../utils/styles';
-import {
-  signInWithEmailAndPassword,
-  usersRef,
-  serverTimestamp,
-  currentUser,
-} from '../../services/firebase';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
+import { useForm, FormProvider } from 'react-hook-form';
+import auth from '@react-native-firebase/auth';
+
 import Layout from '../Layout';
-import LinearGradient from 'react-native-linear-gradient';
-import { showSuccess } from '../../utils/ToastMessage';
+import { showWarning } from '../../utils/ToastMessage';
+import apiService from '../../api/apiService';
+import { TextField } from '../../components/UI/Input';
+import { typography } from '../../theme';
+import {
+  AppLogo,
+  CloseEyeIcon,
+  LockIcon,
+  OpenEyeIcon,
+  UserIcon,
+} from '../../utils/Icons';
+import { GradientButton } from '../../components/UI/Button';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAppDispatch } from '../../redux/hooks';
+import {
+  setAccessToken,
+  setAuthenticated,
+  setCurrentUser,
+} from '../../redux/slice/authSlice';
 
 const LoginScreen = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const navigation: any = useNavigation();
   const [loading, setLoading] = useState(false);
-  const navigation: any = useNavigation(); // For link
+  const inputRefs = useRef<any>({});
+  const { colors }: any = useTheme();
+  const [shouldShow, setShouldShow] = useState(false);
+  const dispatch = useAppDispatch();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill all fields');
+  const methods = useForm({
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+  });
+
+  const { handleSubmit } = methods;
+
+  const onSubmit = async (data: any) => {
+    if (!data.username || !data.password) {
+      showWarning('Please fill all fields');
       return;
     }
+
     setLoading(true);
+
     try {
-      await signInWithEmailAndPassword(email, password);
-      const { uid }: any = currentUser();
-      await usersRef().doc(uid).update({
-        isOnline: true,
-        lastSeen: serverTimestamp(),
+      const res = await apiService.login({
+        username: data.username,
+        password: data.password,
       });
-      // Alert.alert('Success', 'Logged in!');
-      showSuccess('Logged in!');
+
+      if (!res?.success) {
+        showWarning(res?.message);
+        return;
+      }
+
+      dispatch(setAccessToken(res?.token));
+      await AsyncStorage.setItem('token', res?.token);
+
+      await auth().signInWithCustomToken(res?.firebaseToken);
+
+      const userProfileRes = await apiService.getMyProfile();
+      if (!userProfileRes?.success) {
+        showWarning('Failed to get profile');
+        return;
+      }
+
+      const userProfile = userProfileRes.user;
+
+      await AsyncStorage.setItem('currentUser', JSON.stringify(userProfile));
+
+      dispatch(setCurrentUser(userProfile));
+      dispatch(setAuthenticated(true));
+
+      // navigation.replace('Home');
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      showWarning(error?.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
+
   return (
-    <Layout statusBarColor={colors.primary}>
-      <LinearGradient
-        colors={[colors.primary, '#6C63FF']}
-        style={styles.header}
-      >
-        <Text style={styles.headerText}>Welcome Back 👋</Text>
-        <Text style={styles.subText}>Login to continue chatting</Text>
-      </LinearGradient>
-
+    <Layout marginHorizontal={14}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
-        <View style={styles.card}>
-          <Text style={styles.title}>Login</Text>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.container}>
+            {/* Logo */}
+            <View style={{ width: '100%', alignItems: 'center' }}>
+              <AppLogo />
+            </View>
 
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor="#aaa"
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <TextInput
-            placeholder="Password"
-            placeholderTextColor="#aaa"
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
-          <TouchableOpacity
-            style={[styles.button, loading && { opacity: 0.7 }]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Login</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-            <Text style={styles.footerText}>
-              Don’t have an account?{' '}
-              <Text style={styles.linkText}>Register</Text>
+            {/* Title */}
+            <Text
+              style={{
+                ...typography.Montserrat_Bold28,
+                color: colors.Text_Primary_Color,
+              }}
+            >
+              Welcome Back!
             </Text>
-          </TouchableOpacity>
-        </View>
+
+            <Text
+              style={{
+                ...typography.Montserrat_Regular16,
+                color: colors.Text_Secondary_Color,
+                marginBottom: 30,
+                marginTop: 5,
+                fontStyle: 'italic',
+              }}
+            >
+              Step back into light of your Lumora
+            </Text>
+
+            <FormProvider {...methods}>
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: colors.Card_Color,
+                    borderColor: colors.Border_Color,
+                    borderWidth: 0.5,
+                  },
+                ]}
+              >
+                {/* Username */}
+                <TextField
+                  name="username"
+                  placeholder="Enter your username"
+                  LeftIcon={UserIcon}
+                  returnKeyType="next"
+                  inputRefs={inputRefs}
+                  refName="password"
+                  rules={{ required: 'Username is required' }}
+                />
+
+                {/* Password */}
+                <TextField
+                  name="password"
+                  placeholder="Enter your password"
+                  LeftIcon={LockIcon}
+                  RightIcon={shouldShow ? CloseEyeIcon : OpenEyeIcon}
+                  handleRightIconPress={() => setShouldShow(!shouldShow)}
+                  secureTextEntry={!shouldShow}
+                  returnKeyType="done"
+                  inputRefs={inputRefs}
+                  rules={{ required: 'Password is required' }}
+                  showCharCount={false}
+                />
+
+                {/* Login Button */}
+                <GradientButton
+                  title="Login"
+                  onPress={handleSubmit(onSubmit)}
+                  disabled={loading}
+                  loading={loading}
+                />
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('Register')}
+                >
+                  <Text style={styles.footerText}>
+                    Don’t have an account?{' '}
+                    <Text style={styles.linkText}>Register</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </FormProvider>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Layout>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    height: 180,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  headerText: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  subText: {
-    color: '#E8E8E8',
-    fontSize: 14,
-    marginTop: 4,
-  },
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    marginTop: -40,
+    flexGrow: 1,
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   card: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    borderRadius: 20,
-    padding: 20,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 20,
-    color: colors.primary,
-  },
-  input: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 10,
-    fontSize: 15,
-    color: '#333',
-    marginBottom: 15,
-  },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#171926',
+    shadowOpacity: 0.08,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 2,
+    gap: 25,
   },
   footerText: {
     textAlign: 'center',
-    color: '#555',
-    marginTop: 20,
+    color: '#666',
+    marginTop: 25,
+    fontSize: 14,
   },
   linkText: {
-    color: colors.primary,
     fontWeight: '700',
   },
 });

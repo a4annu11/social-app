@@ -1,26 +1,21 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import LoginScreen from '../screens/Auth/LoginScreen';
-import RegisterScreen from '../screens/Auth/RegisterScreen';
 import ChatScreen from '../screens/ChatScreen';
 import TabNavigator from './TabNavigator';
 import CreateGroupScreen from '../screens/TabScreens/CreateGroupScreen';
 import { colors } from '../utils/styles';
+import ProfileScreen from '../screens/AppScreen/AppProfileScreen';
+import StoryViewer from '../screens/AppScreen/StoryViewer';
+import CreateStoryScreen from '../screens/AppScreen/CreateStoryScreen';
+import SettingScreen from '../screens/AppScreen/SettingScreen';
+import SavedPost from '../screens/AppScreen/Setting/SavedPost';
+import MyFollowRequest from '../screens/AppScreen/MyFollowRequest';
+import FollowersList from '../screens/AppScreen/FollowersList';
+import FollowingList from '../screens/AppScreen/FollowingList';
 
 const Stack = createStackNavigator();
 
-const AppNavigator = ({ user }: any) => {
-  if (!user) {
-    // Auth-only stack (no tabs)
-    return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-      </Stack.Navigator>
-    );
-  }
-
-  // Logged-in stack (tabs + chat overlay)
+const AppNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -31,7 +26,7 @@ const AppNavigator = ({ user }: any) => {
       <Stack.Screen
         name="Chat"
         component={ChatScreen}
-        options={({ route }) => ({
+        options={({ route }: any) => ({
           headerShown: false,
           title: route.params?.otherUser?.name || 'Chat',
           headerStyle: { backgroundColor: '#007AFF' },
@@ -42,6 +37,55 @@ const AppNavigator = ({ user }: any) => {
         name="CreateGroup"
         component={CreateGroupScreen}
         options={{ headerShown: false, title: 'Create Group' }}
+      />
+      <Stack.Screen
+        name="userProfile"
+        component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="settings"
+        component={SettingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="savedPost"
+        component={SavedPost}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="followRequest"
+        component={MyFollowRequest}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="userFollowers"
+        component={FollowersList}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="userFollowing"
+        component={FollowingList}
+        options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="StoryViewer"
+        component={StoryViewer}
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+          cardStyle: { backgroundColor: 'black' },
+        }}
+      />
+      <Stack.Screen
+        name="CreateStory"
+        component={CreateStoryScreen}
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+          cardStyle: { backgroundColor: 'black' },
+        }}
       />
     </Stack.Navigator>
   );

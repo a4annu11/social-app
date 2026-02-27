@@ -12,7 +12,6 @@ export const registerUser = async (req, res) => {
     }
 
     const formattedUsername = username.toLowerCase();
-
     const existingUser = await User.findOne({ username: formattedUsername });
 
     if (existingUser) {
@@ -29,10 +28,24 @@ export const registerUser = async (req, res) => {
       email,
     });
 
-    //Firebase Custom Token
     const firebaseToken = await admin
       .auth()
       .createCustomToken(user._id.toString());
+
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(user._id.toString())
+      .set({
+        name: user.name,
+        username: user.username,
+        email: user.email || null,
+        profilePicture: user.profilePicture || null,
+        isOnline: false,
+        lastSeen: admin.firestore.FieldValue.serverTimestamp(),
+        blockedUsers: [],
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
     return res.status(201).json({
       success: true,
@@ -54,7 +67,6 @@ export const loginUser = async (req, res) => {
     const { username, password } = req.body;
 
     const formattedUsername = username.toLowerCase();
-
     const user = await User.findOne({ username: formattedUsername });
 
     if (!user) {
@@ -67,10 +79,25 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    //Firebase Custom Token
     const firebaseToken = await admin
       .auth()
       .createCustomToken(user._id.toString());
+
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(user._id.toString())
+      .set(
+        {
+          name: user.name,
+          username: user.username,
+          email: user.email || null,
+          profilePicture: user.profilePicture || null,
+          isOnline: true,
+          lastSeen: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
 
     return res.status(200).json({
       success: true,

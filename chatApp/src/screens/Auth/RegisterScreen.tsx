@@ -1,40 +1,60 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
 } from 'react-native';
+import { useNavigation, useTheme } from '@react-navigation/native';
+import { useForm, FormProvider } from 'react-hook-form';
 import auth from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
-import LinearGradient from 'react-native-linear-gradient';
 
 import Layout from '../Layout';
 import { showSuccess, showWarning } from '../../utils/ToastMessage';
-import { colors } from '../../utils/styles';
 import apiService from '../../api/apiService';
+import { TextField } from '../../components/UI/Input';
+import { GradientButton } from '../../components/UI/Button';
+import { typography } from '../../theme';
+import {
+  AppLogo,
+  CloseEyeIcon,
+  LockIcon,
+  OpenEyeIcon,
+  UserIcon,
+} from '../../utils/Icons';
+import { setAccessToken, setAuthenticated } from '../../redux/slice/authSlice';
+import { useAppDispatch } from '../../redux/hooks';
 
 const RegisterScreen = () => {
   const navigation: any = useNavigation();
-
-  const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { colors }: any = useTheme();
   const [loading, setLoading] = useState(false);
+  const [shouldShow, setShouldShow] = useState(false);
+  const inputRefs = useRef<any>({});
+  const dispatch = useAppDispatch();
 
-  const handleRegister = async () => {
-    if (!name || !username || !password) {
+  const methods = useForm({
+    defaultValues: {
+      name: '',
+      username: '',
+      email: '',
+      password: '',
+    },
+  });
+
+  const { handleSubmit } = methods;
+
+  const onSubmit = async (data: any) => {
+    if (!data.name || !data.username || !data.password) {
       showWarning('Please fill all required fields');
       return;
     }
 
-    if (password.length < 6) {
+    if (data.password.length < 6) {
       showWarning('Password must be at least 6 characters');
       return;
     }
@@ -42,30 +62,35 @@ const RegisterScreen = () => {
     setLoading(true);
 
     try {
-      // 🔥 Call backend register API
       const res = await apiService.signUp({
-        name,
-        username,
-        password,
-        email,
+        name: data.name,
+        username: data.username,
+        email: data.email,
+        password: data.password,
       });
 
-      if (!res.success) {
-        showWarning(res.message || 'Registration failed');
+      if (!res?.success) {
+        showWarning(res?.message || 'Registration failed');
         setLoading(false);
         return;
       }
 
-      // ✅ Store JWT for backend APIs
-      await AsyncStorage.setItem('token', res.token);
+      dispatch(setAccessToken(res?.token));
+      await AsyncStorage.setItem('token', res?.token);
+      await auth().signInWithCustomToken(res?.firebaseToken);
 
-      // 🔥 Sign into Firebase using custom token
-      await auth().signInWithCustomToken(res.firebaseToken);
+      const userProfile = await apiService.getMyProfile();
+      if (!userProfile.success) {
+        showWarning('Failed to get profile');
+        setLoading(false);
+        return;
+      }
+
+      dispatch(setAuthenticated(true));
+      await AsyncStorage.setItem('currentUser', JSON.stringify(userProfile));
 
       showSuccess('Account created successfully!');
-
-      // Navigate to Home
-      navigation.replace('Home');
+      // navigation.replace('Home');
     } catch (error: any) {
       showWarning(error?.message || 'Something went wrong');
     }
@@ -74,150 +99,138 @@ const RegisterScreen = () => {
   };
 
   return (
-    <Layout statusBarColor={colors.primary}>
-      <LinearGradient
-        colors={[colors.primary, '#6C63FF']}
-        style={styles.header}
-      >
-        <Text style={styles.headerText}>Create Account ✨</Text>
-        <Text style={styles.subText}>Join us and start chatting</Text>
-      </LinearGradient>
-
+    <Layout marginHorizontal={14}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
-        <View style={styles.card}>
-          <Text style={styles.title}>Register</Text>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.container}>
+            {/* Logo */}
+            <View style={{ width: '100%', alignItems: 'center' }}>
+              <AppLogo />
+            </View>
 
-          <TextInput
-            placeholder="Full Name"
-            placeholderTextColor="#aaa"
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-          />
-
-          <TextInput
-            placeholder="Username"
-            placeholderTextColor="#aaa"
-            style={styles.input}
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-          />
-
-          <TextInput
-            placeholder="Email (Optional)"
-            placeholderTextColor="#aaa"
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <TextInput
-            placeholder="Password"
-            placeholderTextColor="#aaa"
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
-          <TouchableOpacity
-            style={[styles.button, loading && { opacity: 0.7 }]}
-            onPress={handleRegister}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Register</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.footerText}>
-              Already have an account?{' '}
-              <Text style={styles.linkText}>Login</Text>
+            {/* Title */}
+            <Text
+              style={{
+                ...typography.Montserrat_Bold28,
+                color: colors.Text_Primary_Color,
+              }}
+            >
+              Create Account
             </Text>
-          </TouchableOpacity>
-        </View>
+
+            <Text
+              style={{
+                ...typography.Montserrat_Regular16,
+                color: colors.Text_Secondary_Color,
+                marginBottom: 30,
+                marginTop: 5,
+                fontStyle: 'italic',
+              }}
+            >
+              Step into the light of Lumora
+            </Text>
+
+            <FormProvider {...methods}>
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: colors.Card_Color,
+                    borderColor: colors.Border_Color,
+                    borderWidth: 0.5,
+                  },
+                ]}
+              >
+                {/* Full Name */}
+                <TextField
+                  name="name"
+                  placeholder="Enter your full name"
+                  LeftIcon={UserIcon}
+                  returnKeyType="next"
+                  inputRefs={inputRefs}
+                  refName="username"
+                  rules={{ required: 'Name is required' }}
+                />
+
+                {/* Username */}
+                <TextField
+                  name="username"
+                  placeholder="Enter your username"
+                  LeftIcon={UserIcon}
+                  returnKeyType="next"
+                  inputRefs={inputRefs}
+                  refName="password"
+                  rules={{ required: 'Username is required' }}
+                />
+
+                {/* Password */}
+                <TextField
+                  name="password"
+                  placeholder="Enter your password"
+                  LeftIcon={LockIcon}
+                  RightIcon={shouldShow ? CloseEyeIcon : OpenEyeIcon}
+                  handleRightIconPress={() => setShouldShow(!shouldShow)}
+                  secureTextEntry={!shouldShow}
+                  returnKeyType="done"
+                  inputRefs={inputRefs}
+                  rules={{ required: 'Password is required' }}
+                />
+
+                {/* Register Button */}
+                <GradientButton
+                  title="Register"
+                  onPress={handleSubmit(onSubmit)}
+                  disabled={loading}
+                  loading={loading}
+                />
+
+                {/* Navigate to Login */}
+                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                  <Text style={styles.footerText}>
+                    Already have an account?{' '}
+                    <Text style={styles.linkText}>Login</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </FormProvider>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Layout>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    height: 180,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  headerText: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  subText: {
-    color: '#E8E8E8',
-    fontSize: 14,
-    marginTop: 4,
-  },
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    marginTop: -40,
+    flexGrow: 1,
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   card: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    borderRadius: 20,
-    padding: 20,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 20,
-    color: colors.primary,
-  },
-  input: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 10,
-    fontSize: 15,
-    color: '#333',
-    marginBottom: 15,
-  },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#171926',
+    shadowOpacity: 0.08,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 2,
+    gap: 25,
   },
   footerText: {
     textAlign: 'center',
-    color: '#555',
-    marginTop: 20,
+    color: '#666',
+    marginTop: 25,
+    fontSize: 14,
   },
   linkText: {
-    color: colors.primary,
     fontWeight: '700',
   },
 });

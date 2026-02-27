@@ -8,15 +8,14 @@ export const getMyProfile = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const user = await User.findById(userId)
-      .select("-password")
-      .populate("followers following", "username name profilePicture");
+    const user = await User.findById(userId).select("-password");
+    // .populate("followers following", "username name profilePicture");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json(user);
+    res.status(200).json({ success: true, user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -29,7 +28,9 @@ export const getUserProfile = async (req, res) => {
     const user = await User.findOne({ username }).select("-password");
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     let isFollowing = false;
@@ -69,10 +70,13 @@ export const getUserProfile = async (req, res) => {
     }
 
     res.status(200).json({
-      ...user.toObject(),
-      isFollowing,
-      isFollower,
-      isRequested,
+      success: true,
+      user: {
+        ...user.toObject(),
+        isFollowing,
+        isFollower,
+        isRequested,
+      },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -92,7 +96,7 @@ export const updateUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Upload new profile image if provided
+    // Upload new profile image if provided.
     if (req.body.profilePicture) {
       // Delete old image if exists
       if (user.profilePicture) {
@@ -116,6 +120,18 @@ export const updateUserProfile = async (req, res) => {
 
     await user.save();
 
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(user._id.toString())
+      .set(
+        {
+          name: user.name,
+          profilePicture: user.profilePicture || null,
+        },
+        { merge: true },
+      );
+
     res.status(200).json({
       success: true,
       user: {
@@ -138,7 +154,9 @@ export const deleteUserProfile = async (req, res) => {
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Delete profile picture from Cloudinary
@@ -149,11 +167,14 @@ export const deleteUserProfile = async (req, res) => {
 
     // Delete Firebase Auth user
     await admin.auth().deleteUser(userId.toString());
+    await admin.firestore().collection("users").doc(userId).delete();
 
     // Delete MongoDB user
     await User.findByIdAndDelete(userId);
 
-    res.status(200).json({ message: "Account deleted successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Account deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -166,13 +187,16 @@ export const togglePrivateAccount = async (req, res) => {
     const user = await User.findById(myId);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     user.isPrivate = !user.isPrivate;
     await user.save();
 
     res.status(200).json({
+      success: true,
       message: `Account is now ${user.isPrivate ? "Private" : "Public"}`,
       isPrivate: user.isPrivate,
     });
@@ -196,7 +220,9 @@ export const followUser = async (req, res) => {
     ]);
 
     if (!currentUser || !targetUser) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Block check
@@ -232,6 +258,7 @@ export const followUser = async (req, res) => {
     }
 
     res.json({
+      success: true,
       message:
         status === "pending" ? "Follow request sent" : "Followed successfully",
       status,
@@ -253,7 +280,9 @@ export const acceptFollowRequest = async (req, res) => {
     });
 
     if (!follow) {
-      return res.status(404).json({ message: "Request not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Request not found" });
     }
 
     follow.status = "accepted";
@@ -264,7 +293,11 @@ export const acceptFollowRequest = async (req, res) => {
       User.findByIdAndUpdate(userId, { $inc: { followingCount: 1 } }),
     ]);
 
-    res.json({ message: "Request accepted", status: "following" });
+    res.json({
+      success: true,
+      message: "Request accepted",
+      status: "following",
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -281,7 +314,9 @@ export const unfollowUser = async (req, res) => {
     });
 
     if (!follow) {
-      return res.status(404).json({ message: "Relationship not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Relationship not found" });
     }
 
     if (follow.status === "accepted") {
@@ -294,8 +329,69 @@ export const unfollowUser = async (req, res) => {
     await follow.deleteOne();
 
     res.json({
+      success: true,
       message: "Unfollowed / Request cancelled",
       status: "not_following",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const cancelFollowRequest = async (req, res) => {
+  try {
+    const myId = req.user.id;
+    const { userId } = req.params;
+
+    const follow = await Follow.findOne({
+      follower: myId,
+      following: userId,
+      status: "pending",
+    });
+
+    if (!follow) {
+      return res.status(404).json({
+        success: false,
+        message: "Pending request not found",
+      });
+    }
+
+    await follow.deleteOne();
+
+    res.json({
+      success: true,
+      message: "Follow request cancelled",
+      status: "not_following",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const rejectFollowRequest = async (req, res) => {
+  try {
+    const myId = req.user.id;
+    const { userId } = req.params;
+
+    const follow = await Follow.findOne({
+      follower: userId,
+      following: myId,
+      status: "pending",
+    });
+
+    if (!follow) {
+      return res.status(404).json({
+        success: false,
+        message: "Follow request not found",
+      });
+    }
+
+    await follow.deleteOne();
+
+    res.json({
+      success: true,
+      message: "Follow request rejected",
+      status: "rejected",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -318,7 +414,7 @@ export const blockUser = async (req, res) => {
       $addToSet: { blockedUsers: userId },
     });
 
-    res.json({ message: "User blocked" });
+    res.json({ success: true, message: "User blocked" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -371,6 +467,7 @@ export const getFollowers = async (req, res) => {
     const result = followers.map((f) => f.follower);
 
     res.json({
+      success: true,
       count: result.length,
       limit,
       offset,
@@ -400,6 +497,7 @@ export const getFollowing = async (req, res) => {
     const result = following.map((f) => f.following);
 
     res.json({
+      success: true,
       count: result.length,
       limit,
       offset,
@@ -423,7 +521,55 @@ export const getMyFollowRequests = async (req, res) => {
 
     const result = requests.map((r) => r.follower);
 
-    res.json(result);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const searchUsers = async (req, res) => {
+  try {
+    const myId = req.user?.id;
+    const { q } = req.query;
+
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = parseInt(req.query.offset) || 0;
+
+    if (!q || q.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required",
+      });
+    }
+
+    const searchRegex = new RegExp(q, "i");
+
+    const currentUser = myId ? await User.findById(myId) : null;
+
+    const users = await User.find({
+      $and: [
+        {
+          $or: [
+            { username: { $regex: searchRegex } },
+            { name: { $regex: searchRegex } },
+          ],
+        },
+        myId ? { _id: { $ne: myId } } : {},
+        currentUser ? { _id: { $nin: currentUser.blockedUsers } } : {},
+      ],
+    })
+      .select("username name profilePicture isPrivate followersCount")
+      .skip(offset)
+      .limit(limit)
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      limit,
+      offset,
+      data: users,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
