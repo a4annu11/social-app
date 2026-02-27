@@ -348,12 +348,42 @@ const PostCard = ({ post, posts, setPosts }: any) => {
 
       {/* CAPTION */}
       {post?.media?.length > 0 && (
-        <Text style={[styles.caption, { color: colors.Text_Secondary_Color }]}>
-          <Text style={[styles.username, { color: colors.Text_Primary_Color }]}>
-            {post?.author?.username}{' '}
+        <>
+          <Text
+            style={[
+              styles.caption,
+              {
+                color: colors.Text_Secondary_Color,
+                ...typography.Montserrat_Bold14,
+              },
+            ]}
+          >
+            {post?.caption ?? ''}
           </Text>
-          {post?.caption ?? ''}
-        </Text>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              marginTop: 8,
+              flexWrap: 'wrap',
+              gap: 6,
+              alignItems: 'center',
+              marginHorizontal: 16,
+            }}
+          >
+            {post?.hashtags?.map((tag: any, index: number) => (
+              <Text
+                key={index}
+                style={{
+                  color: colors.Colored_Text,
+                  ...typography.Montserrat_Bold16,
+                }}
+              >
+                #{tag}
+              </Text>
+            ))}
+          </View>
+        </>
       )}
 
       <Text
