@@ -66,12 +66,18 @@ const ShareQuote = () => {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.container,
+          {
+            borderBottomWidth: 1,
+            borderColor: isFocused ? colors.Colored_Text : '#dddddd7c',
+          },
+        ]}
+      >
         <View
           style={{
-            borderWidth: 1,
-            borderColor: isFocused ? colors.Colored_Text : '#dddddd7c',
-            padding: 10,
+            padding: 16,
             borderRadius: 12,
           }}
         >
@@ -175,7 +181,7 @@ export default ShareQuote;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    // paddingVertical: 16,
   },
 
   inputWrapper: {

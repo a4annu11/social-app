@@ -11,6 +11,7 @@ import {
   toggleLikeComment,
   getFeed,
   getUserPosts,
+  getTaggedPosts,
 } from "../controllers/postController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import {
@@ -42,5 +43,6 @@ router.get("/posts/user/:userId", protect, getUserPosts);
 
 router.post("/save/:postId", protect, toggleSavePost);
 router.get("/saved", protect, getSavedPosts);
+router.get("/posts/my/tagged", protect, getTaggedPosts);
 
 export default router;

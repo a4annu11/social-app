@@ -16,6 +16,9 @@ import {
   cancelFollowRequest,
   rejectFollowRequest,
   searchUsers,
+  unblockUser,
+  getBlockedUsers,
+  getMyFollowingForTag,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -33,11 +36,14 @@ router.post("/unfollow/:userId", protect, unfollowUser);
 router.delete("/cancel-request/:userId", protect, cancelFollowRequest);
 router.delete("/reject-request/:userId", protect, rejectFollowRequest);
 router.post("/block/:userId", protect, blockUser);
+router.delete("/unblock/:userId", protect, unblockUser);
+router.get("/my/blocked-users", protect, getBlockedUsers);
 router.get("/follow-status/:userId", protect, getFollowStatus);
 
 router.get("/:userId/followers", protect, getFollowers);
 router.get("/:userId/following", protect, getFollowing);
 router.get("/my/follow-requests", protect, getMyFollowRequests);
 router.get("/my/search", protect, searchUsers);
+router.get("/my/following-for-tag", protect, getMyFollowingForTag);
 
 export default router;

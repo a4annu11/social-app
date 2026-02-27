@@ -6,15 +6,28 @@ import Post from "../models/Post.js";
 export const createPost = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { caption, media } = req.body;
+    const { caption, media, taggedUsers = [], hashtags = [] } = req.body;
+
+    const validFollowing = await Follow.find({
+      follower: userId,
+      following: { $in: taggedUsers },
+      status: "accepted",
+    }).select("following");
+
+    const validUserIds = validFollowing.map((f) => f.following);
 
     const post = await Post.create({
       author: userId,
       caption,
-      media: media || [], // already uploaded from frontend
+      media: media || [],
+      taggedUsers: validUserIds,
+      hashtags: hashtags.map((tag) => tag.toLowerCase()),
     });
 
-    res.status(201).json({ success: true, post });
+    res.status(201).json({
+      success: true,
+      post,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -467,6 +480,25 @@ export const getUserPosts = async (req, res) => {
       success: true,
       page,
       limit,
+      posts,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getTaggedPosts = async (req, res) => {
+  try {
+    const myId = req.user.id;
+
+    const posts = await Post.find({
+      taggedUsers: myId,
+    })
+      .populate("author", "username profilePicture")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
       posts,
     });
   } catch (error) {

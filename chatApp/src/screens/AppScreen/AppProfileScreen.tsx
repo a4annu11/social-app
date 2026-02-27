@@ -25,7 +25,7 @@ import { getChatId, initializeChatDoc } from '../../services/firebase';
 import auth from '@react-native-firebase/auth';
 import PostCard from '../../components/PostCard';
 
-const tabs = ['Posts', 'Saved', 'Tagged'];
+const tabs = ['Posts', 'Tagged'];
 
 const ProfileScreen = ({ navigation, route }: any) => {
   const username = route.params?.username;
@@ -168,6 +168,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
           uid: otherUid,
           name: profileData.name,
           username: profileData.username,
+          profilePicture: profileData?.profilePicture,
           // Add other details if needed
         },
       });

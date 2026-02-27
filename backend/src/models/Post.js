@@ -21,6 +21,10 @@ const postSchema = new mongoose.Schema(
       },
     ],
 
+    taggedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+
+    hashtags: [{ type: String }],
+
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
     commentsCount: {
@@ -30,5 +34,8 @@ const postSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+postSchema.index({ taggedUsers: 1 });
+postSchema.index({ hashtags: 1 });
 
 export default mongoose.model("Post", postSchema);

@@ -403,18 +403,113 @@ export const blockUser = async (req, res) => {
     const myId = req.user.id;
     const { userId } = req.params;
 
-    await Follow.deleteMany({
+    // Find all follow relationships between the two users
+    const follows = await Follow.find({
       $or: [
         { follower: myId, following: userId },
         { follower: userId, following: myId },
       ],
     });
 
+    // Adjust counts if the follow was accepted
+    const updates = [];
+    for (const f of follows) {
+      if (f.status === "accepted") {
+        if (
+          f.follower.toString() === myId &&
+          f.following.toString() === userId
+        ) {
+          // I am following them
+          updates.push(
+            User.findByIdAndUpdate(myId, { $inc: { followingCount: -1 } }),
+          );
+          updates.push(
+            User.findByIdAndUpdate(userId, { $inc: { followersCount: -1 } }),
+          );
+        } else if (
+          f.follower.toString() === userId &&
+          f.following.toString() === myId
+        ) {
+          // They are following me
+          updates.push(
+            User.findByIdAndUpdate(userId, { $inc: { followingCount: -1 } }),
+          );
+          updates.push(
+            User.findByIdAndUpdate(myId, { $inc: { followersCount: -1 } }),
+          );
+        }
+      }
+    }
+
+    await Promise.all([
+      ...updates,
+      Follow.deleteMany({
+        $or: [
+          { follower: myId, following: userId },
+          { follower: userId, following: myId },
+        ],
+      }),
+    ]);
+
+    // Add to blockedUsers array in MongoDB
     await User.findByIdAndUpdate(myId, {
       $addToSet: { blockedUsers: userId },
     });
 
+    // Update Firebase Firestore
+    const userRef = admin.firestore().collection("users").doc(myId);
+    await userRef.set(
+      { blockedUsers: admin.firestore.FieldValue.arrayUnion(userId) },
+      { merge: true },
+    );
+
     res.json({ success: true, message: "User blocked" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const unblockUser = async (req, res) => {
+  try {
+    const myId = req.user.id;
+    const { userId } = req.params;
+
+    await User.findByIdAndUpdate(myId, {
+      $pull: { blockedUsers: userId },
+    });
+
+    const userRef = admin.firestore().collection("users").doc(myId);
+    await userRef.set(
+      { blockedUsers: admin.firestore.FieldValue.arrayRemove(userId) },
+      { merge: true },
+    );
+
+    res.json({ success: true, message: "User unblocked" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getBlockedUsers = async (req, res) => {
+  try {
+    const myId = req.user.id;
+
+    const user = await User.findById(myId)
+      .select("blockedUsers")
+      .populate("blockedUsers", "username name profilePicture")
+      .lean();
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: user.blockedUsers.length,
+      data: user.blockedUsers,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -569,6 +664,28 @@ export const searchUsers = async (req, res) => {
       limit,
       offset,
       data: users,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getMyFollowingForTag = async (req, res) => {
+  try {
+    const myId = req.user.id;
+
+    const following = await Follow.find({
+      follower: myId,
+      status: "accepted",
+    })
+      .populate("following", "username name profilePicture")
+      .lean();
+
+    const result = following.map((f) => f.following);
+
+    res.json({
+      success: true,
+      data: result,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
