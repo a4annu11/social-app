@@ -265,18 +265,43 @@ const PostCard = ({ post, posts, setPosts }: any) => {
       )}
 
       {post?.media?.length === 0 && (
-        <Text
-          style={[
-            styles.caption,
-            {
-              color: colors.Text_Secondary_Color,
-              ...typography.Montserrat_Bold14,
-              fontStyle: 'italic',
-            },
-          ]}
-        >
-          {post?.caption ?? ''}
-        </Text>
+        <>
+          <Text
+            style={[
+              styles.caption,
+              {
+                color: colors.Text_Secondary_Color,
+                ...typography.Montserrat_Bold14,
+                fontStyle: 'italic',
+              },
+            ]}
+          >
+            {post?.caption ?? ''}
+          </Text>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              marginTop: 8,
+              flexWrap: 'wrap',
+              gap: 6,
+              alignItems: 'center',
+              marginHorizontal: 16,
+            }}
+          >
+            {post?.hashtags?.map((tag: any, index: number) => (
+              <Text
+                key={index}
+                style={{
+                  color: colors.Colored_Text,
+                  ...typography.Montserrat_Bold16,
+                }}
+              >
+                #{tag}
+              </Text>
+            ))}
+          </View>
+        </>
       )}
 
       {/* ACTION ROW */}

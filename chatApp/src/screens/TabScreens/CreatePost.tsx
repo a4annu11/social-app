@@ -23,6 +23,7 @@ import { GradientButton, OutLineButton } from '../../components/UI/Button';
 import AppHeader from '../../components/AppHeader';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SheetManager } from 'react-native-actions-sheet';
+import { typography } from '../../theme';
 
 const CreatePostScreen = () => {
   const insets = useSafeAreaInsets();
@@ -38,6 +39,8 @@ const CreatePostScreen = () => {
       caption: '',
     },
   });
+
+  const captionValue = methods.watch('caption');
 
   // ── Pick Media ──────
   const handlePickMedia = async () => {
@@ -80,8 +83,13 @@ const CreatePostScreen = () => {
 
       const hashtags = extractHashtags(caption);
 
+      const cleanCaption = caption
+        ?.replace(/#\w+/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
       const payload = {
-        caption: caption?.trim(),
+        caption: cleanCaption,
         hashtags,
         taggedUsers: taggedUsers.map(u => u._id),
         ...(uploadedMedia.length > 0 && { media: uploadedMedia }),
@@ -93,8 +101,10 @@ const CreatePostScreen = () => {
         DeviceEventEmitter.emit('REFRESH_HOME_FEED');
         showSuccess('Post created successfully');
 
-        methods.reset();
+        methods.reset({ caption: '' });
         setSelectedMedia([]);
+        setTaggedUsers([]);
+
         navigation.goBack();
       } else {
         showError('Failed to create post');
@@ -113,6 +123,7 @@ const CreatePostScreen = () => {
       ? matches.map(tag => tag.replace('#', '').toLowerCase())
       : [];
   };
+  const liveHashtags = extractHashtags(captionValue);
 
   return (
     <Layout paddingTop={insets.top}>
@@ -149,6 +160,38 @@ const CreatePostScreen = () => {
                 // backgroundColor="#1c1c1e"
               />
             </View>
+            {liveHashtags.length > 0 && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  marginBottom: 10,
+                }}
+              >
+                {liveHashtags.map((tag, index) => (
+                  <View
+                    key={`${tag}-${index}`}
+                    style={{
+                      backgroundColor: colors.Card_Color,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      marginRight: 2,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.Colored_Text,
+                        ...typography.Montserrat_SemiBold14,
+                      }}
+                    >
+                      #{tag}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
             <TouchableOpacity
               style={{
                 flexDirection: 'row',
