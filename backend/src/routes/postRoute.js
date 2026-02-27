@@ -43,6 +43,6 @@ router.get("/posts/user/:userId", protect, getUserPosts);
 
 router.post("/save/:postId", protect, toggleSavePost);
 router.get("/saved", protect, getSavedPosts);
-router.get("/posts/my/tagged", protect, getTaggedPosts);
+router.get("/posts/tagged/:userId", protect, getTaggedPosts);
 
 export default router;

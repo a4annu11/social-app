@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import cloudinary from "../config/cloudinary.js";
 import Comment from "../models/Comment.js";
 import Post from "../models/Post.js";
+import Follow from "../models/Follow.js";
 
 export const createPost = async (req, res) => {
   try {
@@ -490,9 +491,12 @@ export const getUserPosts = async (req, res) => {
 export const getTaggedPosts = async (req, res) => {
   try {
     const myId = req.user.id;
+    const { userId } = req.params;
+
+    const targetUserId = userId || myId;
 
     const posts = await Post.find({
-      taggedUsers: myId,
+      taggedUsers: targetUserId,
     })
       .populate("author", "username profilePicture")
       .sort({ createdAt: -1 });

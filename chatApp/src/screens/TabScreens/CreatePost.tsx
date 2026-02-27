@@ -22,6 +22,7 @@ import { TextField } from '../../components/UI/Input';
 import { GradientButton, OutLineButton } from '../../components/UI/Button';
 import AppHeader from '../../components/AppHeader';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { SheetManager } from 'react-native-actions-sheet';
 
 const CreatePostScreen = () => {
   const insets = useSafeAreaInsets();
@@ -30,6 +31,7 @@ const CreatePostScreen = () => {
 
   const [selectedMedia, setSelectedMedia] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [taggedUsers, setTaggedUsers] = useState<any[]>([]);
 
   const methods = useForm({
     defaultValues: {
@@ -76,8 +78,12 @@ const CreatePostScreen = () => {
         );
       }
 
+      const hashtags = extractHashtags(caption);
+
       const payload = {
         caption: caption?.trim(),
+        hashtags,
+        taggedUsers: taggedUsers.map(u => u._id),
         ...(uploadedMedia.length > 0 && { media: uploadedMedia }),
       };
 
@@ -98,6 +104,14 @@ const CreatePostScreen = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const extractHashtags = (text: string) => {
+    if (!text) return [];
+    const matches = text.match(/#\w+/g);
+    return matches
+      ? matches.map(tag => tag.replace('#', '').toLowerCase())
+      : [];
   };
 
   return (
@@ -135,17 +149,70 @@ const CreatePostScreen = () => {
                 // backgroundColor="#1c1c1e"
               />
             </View>
-            <View style={{ marginTop: 'auto', paddingBottom: 70 }}>
-              <GradientButton
-                title="Share To Lumora"
-                onPress={handleCreatePost}
-                disabled={loading}
-                loading={loading}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: 20,
+              }}
+              onPress={() =>
+                SheetManager.show('TagFollowingSheet', {
+                  payload: {
+                    selected: taggedUsers,
+                    onDone: (users: any[]) => {
+                      setTaggedUsers(users);
+                    },
+                  },
+                })
+              }
+            >
+              <Icon
+                name="person-add-outline"
+                size={20}
+                color={colors.Text_Primary_Color}
               />
-            </View>
+              <Text style={{ marginLeft: 8, color: colors.Text_Primary_Color }}>
+                Tag Users
+              </Text>
+            </TouchableOpacity>
+            {taggedUsers.length > 0 && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  marginBottom: 20,
+                }}
+              >
+                {taggedUsers.map(user => (
+                  <View
+                    key={user._id}
+                    style={{
+                      backgroundColor: colors.Card_Color,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      marginRight: 8,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text style={{ color: '#fff' }}>@{user.username}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </FormProvider>
       </ScrollView>
+      <View
+        style={{ marginTop: 'auto', paddingBottom: 80, marginHorizontal: 16 }}
+      >
+        <GradientButton
+          title="Share To Lumora"
+          onPress={handleCreatePost}
+          disabled={loading}
+          loading={loading}
+        />
+      </View>
     </Layout>
   );
 };

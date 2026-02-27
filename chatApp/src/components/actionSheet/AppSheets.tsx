@@ -626,3 +626,122 @@ export const DeletePostSheet = ({ payload }: any) => {
     </ActionSheet>
   );
 };
+
+export const TagFollowingSheet = ({ payload }: any) => {
+  const { colors }: any = useTheme();
+  const inset = useSafeAreaInsets();
+
+  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any[]>(payload?.selected || []);
+
+  useEffect(() => {
+    fetchFollowing();
+  }, []);
+
+  const fetchFollowing = async () => {
+    try {
+      setLoading(true);
+      const res = await apiService.getFollowingForTag();
+
+      if (res?.success) {
+        setUsers(res.data);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSelect = (user: any) => {
+    const exists = selected.find(u => u._id === user._id);
+
+    if (exists) {
+      setSelected(prev => prev.filter(u => u._id !== user._id));
+    } else {
+      setSelected(prev => [...prev, user]);
+    }
+  };
+
+  const handleDone = () => {
+    payload?.onDone(selected);
+    SheetManager.hide('TagFollowingSheet');
+  };
+
+  return (
+    <ActionSheet
+      id="TagFollowingSheet"
+      gestureEnabled
+      containerStyle={{
+        backgroundColor: colors.Sheet_BG_Color,
+        padding: 16,
+        paddingBottom: Platform.OS === 'ios' ? 0 : inset.bottom + 10,
+        borderTopRightRadius: 28,
+        borderTopLeftRadius: 28,
+        height: '80%',
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 18,
+          fontWeight: '600',
+          marginBottom: 20,
+          color: colors.Text_Primary_Color,
+        }}
+      >
+        Tag Users
+      </Text>
+
+      {loading ? (
+        <ActivityIndicator />
+      ) : (
+        <FlatList
+          data={users}
+          keyExtractor={item => item._id}
+          renderItem={({ item }) => {
+            const isSelected = selected.some(u => u._id === item._id);
+
+            return (
+              <TouchableOpacity
+                onPress={() => toggleSelect(item)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 12,
+                }}
+              >
+                <Image
+                  source={{ uri: item.profilePicture }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    marginRight: 12,
+                  }}
+                />
+
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.Text_Primary_Color }}>
+                    {item.name}
+                  </Text>
+                  <Text style={{ color: '#888' }}>@{item.username}</Text>
+                </View>
+
+                {isSelected && (
+                  <Icon name="checkmark-circle" size={22} color="#4CAF50" />
+                )}
+              </TouchableOpacity>
+            );
+          }}
+        />
+      )}
+
+      <GradientButton
+        title="Done"
+        onPress={handleDone}
+        style={{ marginTop: 20 }}
+      />
+    </ActionSheet>
+  );
+};

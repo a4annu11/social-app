@@ -229,6 +229,20 @@ class ApiService {
       return error;
     }
   };
+
+  getFollowingForTag = async () => {
+    try {
+      const res = await ApiClient(`/user/profile/my/following-for-tag`, {
+        method: 'GET',
+      });
+      console.log(res, 'res from getFollowingForTag');
+      return res;
+    } catch (error) {
+      console.log(error, 'error from getFollowingForTag');
+      return error;
+    }
+  };
+
   addComment = async (payload: any) => {
     try {
       const res = await ApiClient(
